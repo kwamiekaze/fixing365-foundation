@@ -1,0 +1,1 @@
+export function IndicatorLED({color="#65f59a",position=[0,0,0]}:{color?:string;position?:[number,number,number]}){return <mesh name="effect-indicator-led" position={position}><sphereGeometry args={[.035,8,8]}/><meshStandardMaterial color={color} emissive={color} emissiveIntensity={2}/></mesh>}
