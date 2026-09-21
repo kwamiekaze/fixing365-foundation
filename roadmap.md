@@ -8,3 +8,9 @@
 - [x] Complete local request flow and request submission stub
 - [x] Provider badges and provider interest form
 - [x] Metadata, desktop/mobile browser verification, clean preview logs
+
+## Targeted 3D Completion Pass
+- [ ] Fix HQ clock, calendar, desk tools, and request-button hover state
+- [ ] Complete all eight station object inventories with named objects
+- [ ] Confirm object-to-station interaction mapping and regulated-service copy
+- [ ] Verify performance, desktop/mobile layouts, focus views, panels, and fallback
