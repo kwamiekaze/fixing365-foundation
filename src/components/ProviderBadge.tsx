@@ -1,0 +1,3 @@
+import { BadgeCheck,ShieldCheck,FileCheck2,UserCheck } from "lucide-react"; import type { VerificationType } from "@/types";
+const config={identity:[UserCheck,"Identity Verified"],insurance:[ShieldCheck,"Insurance Verified"],license:[FileCheck2,"License Verified"],background:[BadgeCheck,"Background Checked"]} as const;
+export function ProviderBadge({type,verified}:{type:VerificationType;verified:boolean}){if(!verified)return null;const [Icon,label]=config[type];return <span className="inline-flex min-h-9 items-center gap-2 rounded-md border border-success/35 bg-success/10 px-3 text-xs font-bold text-success"><Icon className="size-4" aria-hidden/>{label}</span>}

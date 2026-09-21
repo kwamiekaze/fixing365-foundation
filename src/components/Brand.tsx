@@ -1,0 +1,2 @@
+import { Wrench } from "lucide-react";
+export function Brand({compact=false}:{compact?:boolean}){return <span className="inline-flex items-center gap-2 font-display font-bold text-foreground"><span className="grid size-9 place-items-center rounded-md bg-primary text-primary-foreground"><Wrench className="size-5" aria-hidden/></span><span className={compact?"text-lg":"text-xl"}>Fixing<span className="text-primary">365</span></span></span>}
