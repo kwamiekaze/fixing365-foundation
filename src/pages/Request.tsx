@@ -1,0 +1,2 @@
+import { PageIntro } from "@/components/PageIntro"; import { RequestFlow } from "@/components/RequestFlow";
+export function RequestPage({category='' }:{category?:string}){return <main><PageIntro eyebrow="Request service" title="Tell us what’s broken.">Describe the problem in your own words. You can choose a category, add media, set urgency and review everything before submission.</PageIntro><section className="section-space"><div className="page-shell"><RequestFlow initialCategory={category}/></div></section></main>}

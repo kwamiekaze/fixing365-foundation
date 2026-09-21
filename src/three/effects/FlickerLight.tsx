@@ -1,0 +1,2 @@
+import { useFrame } from "@react-three/fiber"; import { useRef } from "react"; import * as THREE from "three";
+export function FlickerLight({reduced=false}:{reduced?:boolean}){const ref=useRef<THREE.PointLight>(null);useFrame(({clock})=>{if(ref.current)ref.current.intensity=reduced?1.3:1.15+Math.sin(clock.elapsedTime*7)*.12});return <pointLight ref={ref} name="effect-electrical-flicker" color="#ffd36b" position={[0,2.5,.5]} distance={3}/>}

@@ -1,0 +1,2 @@
+import { useFrame } from "@react-three/fiber"; import { useRef } from "react"; import * as THREE from "three";
+export function Airflow({reduced=false}:{reduced?:boolean}){const ref=useRef<THREE.Group>(null);useFrame(({clock})=>{if(!ref.current||reduced)return;ref.current.children.forEach((c,i)=>{c.position.x=((clock.elapsedTime*.45+i*.3)%1.5)-.75})});return <group ref={ref} name="effect-hvac-airflow">{[0,1,2].map(i=><mesh key={i} position={[i*.4-.6,1.8,.4]}><sphereGeometry args={[.025,6,6]}/><meshBasicMaterial color="#9de8ff" transparent opacity={.55}/></mesh>)}</group>}

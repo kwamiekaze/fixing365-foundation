@@ -1,0 +1,1 @@
+export const cameraConfig = { homePosition:[11,8.5,15] as [number,number,number], homeTarget:[0,1,-.8] as [number,number,number], minAzimuthAngle:-.25, maxAzimuthAngle:1.15, minPolarAngle:.82, maxPolarAngle:1.22, minDistance:11, maxDistance:21, focusDistance:9 };

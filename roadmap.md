@@ -1,0 +1,10 @@
+# Fixing365 Foundation
+
+- [x] Design system, shared navigation, footer, controls
+- [x] Service/station/camera configuration and shared types
+- [x] 3D house, HQ desk, stations, effects, interaction, fallback
+- [x] Homepage content and All Services directory
+- [x] Services, How It Works, Providers, About, Get Help pages
+- [x] Complete local request flow and request submission stub
+- [x] Provider badges and provider interest form
+- [x] Metadata, desktop/mobile browser verification, clean preview logs
