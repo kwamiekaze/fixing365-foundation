@@ -1,2 +1,0 @@
-import { useFrame } from "@react-three/fiber"; import { useRef } from "react"; import * as THREE from "three";
-export function Drip({reduced=false}:{reduced?:boolean}){const ref=useRef<THREE.Mesh>(null);useFrame(({clock})=>{if(!ref.current||reduced)return;ref.current.position.y=1.08-((clock.elapsedTime*.65)%1.1)});return <mesh ref={ref} name="effect-faucet-drip" position={[0,1.1,.25]}><sphereGeometry args={[.035,8,8]}/><meshStandardMaterial color="#56d7ff" roughness={.15}/></mesh>}

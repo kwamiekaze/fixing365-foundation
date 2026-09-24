@@ -1,2 +1,0 @@
-import { Text, RoundedBox } from "@react-three/drei";
-export function Sign3D({label,accent}:{label:string;accent:string}){return <group name={`sign-${label.toLowerCase().replaceAll(' ','-')}`} position={[0,2.55,-.25]}><RoundedBox args={[2.45,.48,.08]} radius={.08}><meshStandardMaterial color="#101a2a" metalness={.25} roughness={.5}/></RoundedBox><Text position={[0,0,.051]} fontSize={.16} maxWidth={2.25} textAlign="center" color={accent} anchorX="center" anchorY="middle" outlineWidth={.005} outlineColor="#07101d">{label.toUpperCase()}</Text></group>}

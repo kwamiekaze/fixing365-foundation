@@ -1,87 +1,79 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowDown, Move3d, RotateCcw, Rows3, ScanSearch, ScanLine } from "lucide-react";
+import { ArrowDown, Move3d, RotateCcw, Rows3, ScanEye, ScanSearch } from "lucide-react";
 import { Button } from "./ui/button";
 import { LoadingScreen } from "./LoadingScreen";
 import { Fallback2D } from "./Fallback2D";
 import { ServicePanel } from "./ServicePanel";
-import { ProblemPanel } from "./ProblemPanel";
 import { AllServicesDrawer } from "./AllServicesDrawer";
-import { services } from "@/config/services";
-import { problemScenes } from "@/config/problems";
+import { getZone, spotsForZone, zones, type ZoneId } from "@/config/world";
 import { supportsWebGL } from "@/lib/webgl";
+import { useWorld, world } from "@/three/world/store";
 
 const Scene = lazy(() => import("@/three/Scene"));
 
 export function RepairHouseHero() {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [selectedProblem, setSelectedProblem] = useState<string | null>(null);
-  const [fixedProblem, setFixedProblem] = useState<string | null>(null);
-  const [xray, setXray] = useState(false);
   const [simple, setSimple] = useState(false);
   const [mobileExplore, setMobileExplore] = useState(false);
   const [webgl, setWebgl] = useState(true);
-  const [reduced, setReduced] = useState(false);
+  const [desktop, setDesktop] = useState(true);
+  const [loaded, setLoaded] = useState<Record<string, boolean>>({});
+  const zone = useWorld((s) => s.zone);
+  const spot = useWorld((s) => s.spot);
+  const xray = useWorld((s) => s.xray);
+  const explored = useWorld((s) => s.explored);
+
   useEffect(() => {
     setWebgl(supportsWebGL());
-    setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setSelected(null);
-        setSelectedProblem(null);
-        setFixedProblem(null);
-      }
+    setDesktop(window.innerWidth >= 768);
+    world.set({ reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches });
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") world.back();
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
+
+  const onZoneDetail = useCallback(
+    (id: ZoneId, ok: boolean) => setLoaded((l) => (l[id] === ok ? l : { ...l, [id]: ok })),
+    [],
+  );
   const useSimple = simple || !webgl;
-  const closeProblem = () => {
-    setSelectedProblem(null);
-    setFixedProblem(null);
-  };
+  const chips = spotsForZone(zone, xray);
+  const streaming = !useSimple && !loaded[zone];
+  const current = getZone(zone);
+
   return (
     <section
-      className="relative h-[100svh] min-h-[42rem] max-h-[75rem] overflow-hidden border-b border-border md:h-[calc(100vh-4rem)]"
-      aria-label="Interactive Fixing365 repair neighborhood"
+      className="relative h-[calc(100svh-4rem)] min-h-[36rem] max-h-[75rem] overflow-hidden border-b border-border md:h-[calc(100vh-4rem)]"
+      aria-label="Interactive Fixing365 neighborhood"
     >
       <div className="absolute inset-0">
         {useSimple ? (
-          <Fallback2D selected={selected} onSelect={setSelected} />
+          <Fallback2D />
         ) : (
           <Suspense fallback={<LoadingScreen />}>
-            <Scene
-              selected={selected}
-              onSelect={setSelected}
-              selectedProblem={selectedProblem}
-              fixedProblem={fixedProblem}
-              onSelectProblem={(id) => {
-                setSelectedProblem(id);
-                if (id !== fixedProblem) setFixedProblem(null);
-              }}
-              onRequest={() => location.assign("/request")}
-              mobileExplore={mobileExplore}
-              reduced={reduced}
-              xray={xray}
-            />
+            <Scene canRotate={desktop || mobileExplore} onZoneDetail={onZoneDetail} />
           </Suspense>
         )}
       </div>
+
       <div
-        className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-72 bg-gradient-to-b ${xray ? "from-[#071824]/95" : "from-panel-strong/95"} to-transparent`}
+        className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-64 bg-gradient-to-b from-panel-strong/90 to-transparent transition-opacity duration-500 ${explored ? "opacity-60" : "opacity-100"}`}
       />
-      <div className="pointer-events-none absolute left-0 top-0 z-20 max-w-3xl px-5 pt-7 md:px-10 md:pt-10 lg:px-16">
-        <p className="font-display text-xs font-bold uppercase text-primary">
-          The repair neighborhood is live
-        </p>
-        <h1 className="mt-3 max-w-2xl text-balance font-display text-4xl font-bold leading-[1.05] md:text-6xl">
-          Walk in. Tap what’s broken. Find the right provider.
+
+      <div
+        className={`pointer-events-none absolute left-0 top-0 z-20 max-w-3xl px-5 pt-16 transition-all duration-500 md:px-10 md:pt-10 lg:px-16 ${explored ? "-translate-y-2 opacity-0" : "opacity-100"}`}
+        aria-hidden={explored}
+      >
+        <h1 className="max-w-2xl text-balance font-display text-[2.1rem] font-bold leading-[1.02] md:text-6xl">
+          If it’s broken, start here.
         </h1>
-        <p className="mt-4 hidden max-w-xl text-base leading-7 text-foreground/75 sm:block">
-          Explore 26 recognizable problems across a continuously streamed home and repair
-          neighborhood.
+        <p className="mt-3 max-w-md text-sm leading-6 text-foreground/80 md:mt-4 md:text-base md:leading-7">
+          Tap anything that’s broken in the house. We’ll show you the fix and the right provider for
+          it.
         </p>
-        <div className="pointer-events-auto mt-6 flex flex-wrap gap-3">
+        <div className="pointer-events-auto mt-5 flex flex-wrap gap-3">
           <Button asChild variant="hero" size="lg">
             <Link to="/request">
               <ScanSearch />
@@ -91,79 +83,113 @@ export function RepairHouseHero() {
           <AllServicesDrawer />
         </div>
       </div>
-      <div className="pointer-events-auto absolute right-4 top-4 z-30 flex flex-wrap justify-end gap-2 md:top-6">
-        <Button
-          variant={xray ? "hero" : "inverse"}
-          size="sm"
-          disabled={useSimple}
-          onClick={() => setXray((value) => !value)}
-        >
-          <ScanLine />
-          {xray ? "X-Ray on" : "X-Ray"}
-        </Button>
-        <Button variant="inverse" size="sm" onClick={() => setSimple((value) => !value)}>
-          <Rows3 />
-          {useSimple ? "3D view" : "Simple view"}
-        </Button>
+
+      {explored && current && (
+        <div className="pointer-events-none absolute left-5 top-16 z-20 md:left-10 md:top-8">
+          <p className="font-display text-xl font-bold md:text-2xl">{current.name}</p>
+          <p className="mt-1 max-w-[14rem] text-xs text-foreground/70 md:max-w-xs md:text-sm">
+            {xray ? "X-Ray: see the systems hidden inside the walls." : current.blurb}
+          </p>
+        </div>
+      )}
+
+      <div
+        className="pointer-events-auto absolute right-3 top-3 z-30 flex items-center gap-2 md:right-5 md:top-5"
+        aria-label="View options"
+      >
         {!useSimple && (
+          <Button
+            variant={xray ? "hero" : "inverse"}
+            size="sm"
+            aria-pressed={xray}
+            onClick={() => world.set({ xray: !xray, spot: null, explored: true })}
+          >
+            <ScanEye />
+            X-Ray
+          </Button>
+        )}
+        <Button variant="inverse" size="sm" onClick={() => setSimple((v) => !v)}>
+          <Rows3 />
+          <span className="max-md:sr-only">{useSimple ? "3D view" : "Simple view"}</span>
+        </Button>
+        {!useSimple && !desktop && (
           <Button
             variant={mobileExplore ? "hero" : "inverse"}
             size="sm"
-            className="md:hidden"
-            onClick={() => setMobileExplore((value) => !value)}
+            onClick={() => setMobileExplore((v) => !v)}
           >
             <Move3d />
-            {mobileExplore ? "Done" : "Explore"}
+            <span className="max-md:sr-only">{mobileExplore ? "Done" : "Rotate"}</span>
           </Button>
         )}
       </div>
-      {selected && <ServicePanel selected={selected} onClose={() => setSelected(null)} />}
-      <ProblemPanel
-        problemId={selectedProblem}
-        showFix={Boolean(selectedProblem && fixedProblem === selectedProblem)}
-        onToggleFix={() =>
-          setFixedProblem((current) => (current === selectedProblem ? null : selectedProblem))
-        }
-        onClose={closeProblem}
-      />
-      <div className="absolute bottom-24 left-4 z-20 hidden rounded-md border border-border bg-panel px-3 py-2 text-xs font-bold backdrop-blur-md lg:block">
-        {problemScenes.length} live problem scenes · 4 streamed zones{xray ? " · X-Ray active" : ""}
-      </div>
-      <div className="absolute inset-x-0 bottom-4 z-20 px-3 md:bottom-6 md:px-6">
-        <div className="pointer-events-auto scrollbar-none mx-auto flex max-w-5xl gap-2 overflow-x-auto pb-2">
-          {(selected || selectedProblem) && (
-            <Button
-              variant="inverse"
-              className="min-h-11 shrink-0"
-              onClick={() => {
-                setSelected(null);
-                closeProblem();
-              }}
-            >
-              <RotateCcw />
-              Full view
-            </Button>
-          )}
-          {services.map((service) => (
-            <button
-              key={service.id}
-              onClick={() => {
-                closeProblem();
-                setSelected(service.id);
-              }}
-              className={`min-h-11 shrink-0 rounded-md border px-4 text-xs font-bold backdrop-blur-md transition ${selected === service.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-panel text-foreground hover:border-primary"}`}
-            >
-              {service.shortName}
-            </button>
-          ))}
+
+      {streaming && (
+        <div className="pointer-events-none absolute left-1/2 top-24 z-20 -translate-x-1/2 rounded-full border border-border bg-panel px-4 py-2 text-xs font-bold backdrop-blur-md">
+          Loading {current?.name ?? "area"} detail…
         </div>
-        <a
-          href="#below-house"
-          className="pointer-events-auto mx-auto mt-1 hidden w-fit items-center gap-2 text-xs font-bold text-foreground/70 md:flex"
+      )}
+
+      {spot && <ServicePanel />}
+
+      {!useSimple && (
+        <div
+          className={`absolute inset-x-0 bottom-24 z-20 px-3 md:bottom-5 md:px-6 ${spot ? "max-md:hidden" : ""}`}
         >
-          Scroll for more <ArrowDown className="size-4" />
-        </a>
-      </div>
+          <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <div
+                role="tablist"
+                aria-label="Neighborhood areas"
+                className="flex rounded-md border border-border bg-panel p-1 backdrop-blur-md"
+              >
+                {zones.map((z) => (
+                  <button
+                    key={z.id}
+                    role="tab"
+                    aria-selected={zone === z.id}
+                    onClick={() => world.goZone(z.id)}
+                    className={`min-h-9 rounded px-3 text-xs font-bold transition md:px-4 ${zone === z.id ? "bg-primary text-primary-foreground" : "text-foreground/80 hover:text-foreground"}`}
+                  >
+                    {z.short}
+                  </button>
+                ))}
+              </div>
+              {(spot || zone !== "house") && (
+                <Button
+                  variant="inverse"
+                  size="sm"
+                  className="min-h-11"
+                  onClick={() => world.back()}
+                >
+                  <RotateCcw />
+                  {spot ? "Back" : "House"}
+                </Button>
+              )}
+            </div>
+            <div
+              className="scrollbar-none flex gap-2 overflow-x-auto pb-1"
+              aria-label="Problems you can tap"
+            >
+              {chips.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => world.selectSpot(c.id)}
+                  className={`min-h-11 shrink-0 rounded-md border px-4 text-xs font-bold backdrop-blur-md transition ${spot === c.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-panel text-foreground hover:border-primary"}`}
+                >
+                  {c.chip}
+                </button>
+              ))}
+            </div>
+          </div>
+          <a
+            href="#below-house"
+            className="pointer-events-auto mx-auto mt-1 hidden w-fit items-center gap-2 text-xs font-bold text-foreground/70 md:flex"
+          >
+            Scroll for more <ArrowDown className="size-4" />
+          </a>
+        </div>
+      )}
     </section>
   );
 }
