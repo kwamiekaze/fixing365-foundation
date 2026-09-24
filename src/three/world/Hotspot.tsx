@@ -34,7 +34,8 @@ export function Hotspot({
       spot !== undefined &&
       s.zone === spot.zone &&
       s.xray === Boolean(spot.xray) &&
-      s.spot === null,
+      s.spot === null &&
+      !s.touring,
   );
   const fixed = useWorld((s) => Boolean(s.fixed[id]));
   const [hover, setHover] = useState(false);

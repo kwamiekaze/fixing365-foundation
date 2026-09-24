@@ -7,7 +7,6 @@ import { CameraRig } from "./world/CameraRig";
 import { DebugInfo } from "./world/DebugInfo";
 import { WorldEnvironment } from "./world/Environment";
 import { ZoneSlot } from "./world/ZoneSlot";
-import { world } from "./world/store";
 import { HouseLow } from "./zones/house/HouseLow";
 import { HqLow } from "./zones/hq/HqLow";
 import { BlockLow } from "./zones/block/BlockLow";
@@ -45,7 +44,6 @@ export default function Scene({ canRotate, onZoneDetail }: Props) {
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.05,
       }}
-      onPointerMissed={() => world.selectSpot(null)}
     >
       <PerformanceMonitor
         onDecline={() => {

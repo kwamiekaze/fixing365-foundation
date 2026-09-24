@@ -22,6 +22,10 @@ export function RepairHouseHero() {
   const spot = useWorld((s) => s.spot);
   const xray = useWorld((s) => s.xray);
   const explored = useWorld((s) => s.explored);
+  const card = useWorld((s) => s.card);
+  const touring = useWorld((s) => s.touring);
+  const caption = useWorld((s) => s.tourCaption);
+  const showIntro = !explored && !touring;
 
   useEffect(() => {
     setWebgl(supportsWebGL());
@@ -59,12 +63,12 @@ export function RepairHouseHero() {
       </div>
 
       <div
-        className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-64 bg-gradient-to-b from-panel-strong/90 to-transparent transition-opacity duration-500 ${explored ? "opacity-60" : "opacity-100"}`}
+        className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-64 bg-gradient-to-b from-panel-strong/90 to-transparent transition-opacity duration-500 ${showIntro ? "opacity-100" : "opacity-50"}`}
       />
 
       <div
-        className={`pointer-events-none absolute left-0 top-0 z-20 max-w-3xl px-5 pt-16 transition-all duration-500 md:px-10 md:pt-10 lg:px-16 ${explored ? "-translate-y-2 opacity-0" : "opacity-100"}`}
-        aria-hidden={explored}
+        className={`pointer-events-none absolute left-0 top-0 z-20 max-w-3xl px-5 pt-16 transition-all duration-500 md:px-10 md:pt-10 lg:px-16 ${showIntro ? "opacity-100" : "pointer-events-none -translate-y-2 opacity-0"}`}
+        aria-hidden={!showIntro}
       >
         <h1 className="max-w-2xl text-balance font-display text-[2.1rem] font-bold leading-[1.02] md:text-6xl">
           If it’s broken, start here.
@@ -84,7 +88,7 @@ export function RepairHouseHero() {
         </div>
       </div>
 
-      {explored && current && (
+      {explored && !touring && current && (
         <div className="pointer-events-none absolute left-5 top-16 z-20 md:left-10 md:top-8">
           <p className="font-display text-xl font-bold md:text-2xl">{current.name}</p>
           <p className="mt-1 max-w-[14rem] text-xs text-foreground/70 md:max-w-xs md:text-sm">
@@ -132,9 +136,26 @@ export function RepairHouseHero() {
 
       {spot && <ServicePanel />}
 
+      {touring && (
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-24 z-20 px-5 md:bottom-10 md:px-10"
+          aria-live="polite"
+        >
+          <p
+            key={caption ?? "travel"}
+            className={`tour-caption max-w-xl font-display text-2xl font-bold leading-tight text-balance drop-shadow-[0_2px_12px_rgba(0,0,0,.6)] md:text-4xl ${caption ? "opacity-100" : "opacity-0"}`}
+          >
+            {caption ?? " "}
+          </p>
+          <p className="mt-2 text-xs font-bold text-foreground/70 md:text-sm">
+            Tap anywhere to explore
+          </p>
+        </div>
+      )}
+
       {!useSimple && (
         <div
-          className={`absolute inset-x-0 bottom-24 z-20 px-3 md:bottom-5 md:px-6 ${spot ? "max-md:hidden" : ""}`}
+          className={`absolute inset-x-0 bottom-24 z-20 px-3 md:bottom-5 md:px-6 ${(spot && card === "compact") || touring ? "hidden" : spot && card === "full" ? "max-md:hidden" : ""}`}
         >
           <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col gap-2">
             <div className="flex items-center gap-2">

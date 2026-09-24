@@ -10,6 +10,14 @@ export interface WorldState {
   reduced: boolean;
   /** Set when a user drags or picks a view, used to hide the intro copy. */
   explored: boolean;
+  /** Selected spot's card: a short title card, the full details, or tucked away. */
+  card: "compact" | "full" | "hidden";
+  /** True while the idle cinematic tour is flying the camera. */
+  touring: boolean;
+  /** Caption for the tour stop currently on screen. */
+  tourCaption: string | null;
+  /** Bumped on every navigation so choosing the same view again still re-frames it. */
+  viewNonce: number;
 }
 
 let state: WorldState = {
@@ -19,6 +27,10 @@ let state: WorldState = {
   fixed: {},
   reduced: false,
   explored: false,
+  card: "compact",
+  touring: false,
+  tourCaption: null,
+  viewNonce: 0,
 };
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -35,20 +47,42 @@ export const world = {
   },
   selectSpot(id: string | null) {
     const spot = getSpot(id);
-    if (!spot) return world.set({ spot: null });
+    if (!spot)
+      return world.set({
+        spot: null,
+        touring: false,
+        tourCaption: null,
+        viewNonce: state.viewNonce + 1,
+      });
     world.set({
       spot: spot.id,
       zone: spot.zone,
       explored: true,
+      card: "compact",
+      viewNonce: state.viewNonce + 1,
+      touring: false,
+      tourCaption: null,
       xray: spot.xray ? true : state.xray,
     });
   },
+  /** Change how much of the selected spot's card is showing. Never moves the camera. */
+  setCard(card: WorldState["card"]) {
+    world.set({ card });
+  },
   goZone(zone: ZoneId) {
-    world.set({ zone, spot: null, explored: zone !== "house" || state.explored });
+    world.set({
+      zone,
+      spot: null,
+      touring: false,
+      tourCaption: null,
+      viewNonce: state.viewNonce + 1,
+      explored: zone !== "house" || state.explored,
+    });
   },
   back() {
-    if (state.spot) return world.set({ spot: null });
-    if (state.zone !== "house") return world.set({ zone: "house" });
+    const nonce = state.viewNonce + 1;
+    if (state.spot) return world.set({ spot: null, viewNonce: nonce });
+    world.set({ zone: "house", viewNonce: nonce });
   },
   toggleFix(id: string) {
     world.set({ fixed: { ...state.fixed, [id]: !state.fixed[id] } });

@@ -468,3 +468,42 @@ export const spotsForZone = (zone: ZoneId, xray = false) =>
 /** Best spot to open when a user picks a whole service category. */
 export const heroSpotForService = (service: string) =>
   spots.find((s) => s.service === service && !s.xray);
+
+/**
+ * Idle cinematic tour. After a stretch with no taps, the camera cranes
+ * through the neighborhood on its own: establishing shot, room by room
+ * through the house, out to the yard, down Main Street and back to HQ.
+ * Travel time between stops is worked out from the distance flown.
+ */
+export interface TourStop {
+  caption: string;
+  view: CameraView;
+  /** Seconds to hold on the framing, drifting in slowly. */
+  hold: number;
+}
+const spotStop = (id: string, hold = 3.2): TourStop => {
+  const s = getSpot(id)!;
+  return { caption: s.title, view: s.view, hold };
+};
+export const tour: TourStop[] = [
+  { caption: "If it’s broken, start here.", view: homeView, hold: 3.5 },
+  spotStop("kitchen-pipe"),
+  spotStop("fridge", 2.6),
+  { caption: "The living room", view: v([3.2, 3.4, 3.6], [-1.6, 1.0, -3.6]), hold: 2.4 },
+  spotStop("tv-mount", 2.8),
+  spotStop("ceiling-fan", 2.6),
+  spotStop("thermostat", 2.6),
+  spotStop("breaker-panel", 2.8),
+  spotStop("washer-e21", 2.6),
+  spotStop("front-door", 2.8),
+  spotStop("garage-door", 2.8),
+  spotStop("roof-gutter", 3),
+  spotStop("ev-charger", 2.4),
+  spotStop("condenser", 2.6),
+  spotStop("fence-gate", 2.6),
+  { caption: "Main Street", view: getZone("block")!.view, hold: 3 },
+  spotStop("storefront-lights", 2.8),
+  spotStop("rooftop-hvac", 2.8),
+  { caption: "Fixing365 HQ", view: getZone("hq")!.view, hold: 2.8 },
+  spotStop("hq-desk", 3.2),
+];
