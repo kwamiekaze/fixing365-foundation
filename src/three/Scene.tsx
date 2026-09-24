@@ -15,7 +15,8 @@ import { HouseLow } from "./zones/house/HouseLow";
  * near it. To grow the city, add a zone to config/world.ts, a Low massing
  * component, a lazy Detail chunk, and one ZoneSlot below.
  */
-const HouseDetail = lazy(() => import("./zones/house/HouseDetail"));
+const HouseDetail = lazyWithRetry(() => import("./zones/house/HouseDetail"));
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 interface Props {
   onZoneDetail?: (zone: ZoneId, loaded: boolean) => void;
