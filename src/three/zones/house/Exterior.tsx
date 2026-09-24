@@ -208,15 +208,6 @@ function GarageDoor() {
             </group>
           ))}
         </group>
-        {!fixed && (
-          <B
-            name="obj-loose-roller"
-            p={[1.9, 0.08, 0.5]}
-            r={[Math.PI / 2, 0, 0.4]}
-            s={[0.12, 0.05, 0.12]}
-            m={M.darkMetal}
-          />
-        )}
       </group>
       <B
         name="driveway"

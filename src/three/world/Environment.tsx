@@ -1,6 +1,7 @@
 import { StaticBatch } from "./StaticBatch";
 import { NEIGHBOR_HOMES, Neighborhood } from "./Neighborhood";
 import { Neighbors } from "./Npcs";
+import { ServiceVanDetailed } from "./ServiceVan";
 import { GrassField, RealisticTrees, type TreeSpec } from "./Foliage";
 
 const STREET_TREES: TreeSpec[] = [
@@ -183,39 +184,6 @@ function Car({
   );
 }
 
-/** Branded Fixing365 service van parked on the street. */
-function ServiceVan() {
-  return (
-    <group name="fixing365-service-van" position={[-18.5, 0, 7.4]}>
-      <B p={[0, 1.15, 0]} s={[4.6, 1.8, 1.9]} m={M.white} />
-      <B p={[2.55, 0.85, 0]} s={[0.8, 1.2, 1.86]} m={M.white} />
-      <B p={[2.62, 1.2, 0]} s={[0.72, 0.5, 1.9]} m={M.glass} cast={false} />
-      <B p={[0, 0.72, 0.955]} s={[4.6, 0.22, 0.02]} m={M.orange} cast={false} />
-      <B p={[0, 0.72, -0.955]} s={[4.6, 0.22, 0.02]} m={M.orange} cast={false} />
-      <B p={[-0.4, 1.45, 0.96]} s={[1.6, 0.5, 0.02]} m={M.navy} cast={false} />
-      <B p={[-0.4, 1.45, 0.975]} s={[0.5, 0.18, 0.01]} m={M.orange} cast={false} />
-      {(
-        [
-          [-1.5, 0.9],
-          [1.7, 0.9],
-          [-1.5, -0.9],
-          [1.7, -0.9],
-        ] as [number, number][]
-      ).map(([wx, wz], i) => (
-        <C
-          key={i}
-          p={[wx, 0.36, wz]}
-          r={[Math.PI / 2, 0, 0]}
-          radius={0.36}
-          h={0.26}
-          m={M.black}
-          seg={14}
-        />
-      ))}
-    </group>
-  );
-}
-
 export function WorldEnvironment({ shadows }: { shadows: boolean }) {
   const day = useDaylight();
   const night = day < 0.35;
@@ -329,16 +297,16 @@ export function WorldEnvironment({ shadows }: { shadows: boolean }) {
       <GrassField area={[-38, -16, 42, 27]} avoid={GRASS_AVOID} />
       <Neighborhood />
       <Neighbors />
+      <ServiceVanDetailed position={[-1.5, 0, 10.85]} rotation={Math.PI} />
       {night && <pointLight position={[-10, 4, 6]} intensity={8} distance={14} color="#ffcf8a" />}
       <StaticBatch name="street-props" version={night ? 1 : 0}>
         {/* Lamps sit midway between the street trees so no pole ever runs through a crown. */}
         {[-25, -5, 9, 28].map((x) => (
           <StreetLamp key={x} x={x} z={5.6} on={night || day < 0.5} />
         ))}
-        <Car x={-1} z={10.6} color="#274b7a" />
+        <Car x={24} z={10.6} color="#274b7a" />
         <Car x={20} z={7.4} color="#b8b9bb" flip />
         <Car x={31} z={10.6} color="#8a1f23" />
-        <ServiceVan />
       </StaticBatch>
     </group>
   );

@@ -286,7 +286,7 @@ function Detectors() {
   const green = useMemo(() => glow("#3ddc84", 2), []);
   return (
     <Hotspot id="smoke-detector">
-      <group name="obj-smoke-detector" position={[4.8, 2.9, -2.7]}>
+      <group name="obj-smoke-detector" position={[5.5, 2.9, -2.7]}>
         <C
           r={[Math.PI / 2, 0, 0]}
           radius={0.1}
@@ -303,7 +303,7 @@ function Detectors() {
         )}
       </group>
       {fixed && (
-        <group name="obj-co-detector" position={[4.3, 2.9, -2.7]}>
+        <group name="obj-co-detector" position={[5.12, 2.9, -2.7]}>
           <B s={[0.12, 0.16, 0.04]} m={M.white} />
           <S p={[0, 0.04, 0.025]} radius={0.01} m={green} />
         </group>

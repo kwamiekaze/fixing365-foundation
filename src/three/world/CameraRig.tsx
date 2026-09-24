@@ -175,6 +175,21 @@ export function CameraRig() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
+  // ?cam=px,py,pz,tx,ty,tz (with ?debug) parks the camera anywhere, for visual checks.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const c = q.get("cam");
+    if (!q.has("debug") || !c) return;
+    const n = c.split(",").map(Number);
+    if (n.length !== 6 || n.some(Number.isNaN)) return;
+    const id = window.setTimeout(() => {
+      world.set({ card: "hidden" });
+      enterHold(new THREE.Vector3(n[0], n[1], n[2]), new THREE.Vector3(n[3], n[4], n[5]));
+    }, 1500);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const stopTour = () => {
     const s = st.current;
     if (s.mode !== "tour") return;

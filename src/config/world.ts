@@ -276,8 +276,8 @@ export const spots: SpotConfig[] = [
     problem: "The hallway smoke detector chirps every minute. It is past its replacement date.",
     fix: "A pro replaces smoke and CO detectors, interconnects them and tests every alarm.",
     related: ["Smoke & CO detectors", "Leak sensors", "Smart home setup"],
-    marker: [4.8, 3.5, -2.5],
-    view: v([3.0, 2.5, 1.6], [4.7, 2.8, -2.7]),
+    marker: [5.5, 3.5, -2.55],
+    view: v([3.4, 2.5, 1.4], [5.4, 2.8, -2.7]),
   },
   // Exterior
   {
