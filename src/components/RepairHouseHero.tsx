@@ -152,23 +152,25 @@ export function RepairHouseHero() {
         >
           <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div
-                role="tablist"
-                aria-label="Neighborhood areas"
-                className="flex rounded-md border border-border bg-panel p-1 backdrop-blur-md"
-              >
-                {zones.map((z) => (
-                  <button
-                    key={z.id}
-                    role="tab"
-                    aria-selected={zone === z.id}
-                    onClick={() => world.goZone(z.id)}
-                    className={`min-h-9 rounded px-3 text-xs font-bold transition md:px-4 ${zone === z.id ? "bg-primary text-primary-foreground" : "text-foreground/80 hover:text-foreground"}`}
-                  >
-                    {z.short}
-                  </button>
-                ))}
-              </div>
+              {zones.length > 1 && (
+                <div
+                  role="tablist"
+                  aria-label="Neighborhood areas"
+                  className="flex rounded-md border border-border bg-panel p-1 backdrop-blur-md"
+                >
+                  {zones.map((z) => (
+                    <button
+                      key={z.id}
+                      role="tab"
+                      aria-selected={zone === z.id}
+                      onClick={() => world.goZone(z.id)}
+                      className={`min-h-9 rounded px-3 text-xs font-bold transition md:px-4 ${zone === z.id ? "bg-primary text-primary-foreground" : "text-foreground/80 hover:text-foreground"}`}
+                    >
+                      {z.short}
+                    </button>
+                  ))}
+                </div>
+              )}
               {(spot || zone !== "house") && (
                 <Button
                   variant="inverse"

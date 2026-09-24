@@ -1,16 +1,8 @@
 import { StaticBatch } from "./StaticBatch";
-import { Environment as DreiEnv, Lightformer } from "@react-three/drei";
+import { Environment as DreiEnv, Lightformer, Sparkles } from "@react-three/drei";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { B, C, M, daylight, glow, localHour } from "./kit";
-
-/** Seeded random so the city layout is identical on every load. */
-function rng(seed: number) {
-  return () => {
-    seed = (seed * 16807) % 2147483647;
-    return (seed - 1) / 2147483646;
-  };
-}
 
 export function useDaylight() {
   return useMemo(() => daylight(localHour()), []);
@@ -39,77 +31,64 @@ function Sky({ day }: { day: number }) {
   );
 }
 
-/** Procedural lit-window texture shared by every background building. */
-function useWindowTexture(day: number) {
-  return useMemo(() => {
-    const c = document.createElement("canvas");
-    c.width = 64;
-    c.height = 128;
-    const g = c.getContext("2d")!;
-    g.fillStyle = "#3a4250";
-    g.fillRect(0, 0, 64, 128);
-    const r = rng(7);
-    for (let y = 4; y < 128; y += 10)
-      for (let x = 4; x < 64; x += 10) {
-        const lit = r() < (day > 0.6 ? 0.08 : 0.45);
-        g.fillStyle = lit ? (r() < 0.5 ? "#ffd9a0" : "#fff1d6") : day > 0.5 ? "#7d93ab" : "#1b2130";
-        g.fillRect(x, y, 6, 6);
-      }
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.magFilter = THREE.NearestFilter;
-    return t;
-  }, [day]);
-}
-
-/** Distant city skyline: one instanced mesh, one material, a single draw call. */
-function Skyline({ day }: { day: number }) {
-  const ref = useRef<THREE.InstancedMesh>(null);
-  const tex = useWindowTexture(day);
-  const mat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        map: tex,
-        emissiveMap: tex,
-        emissive: new THREE.Color("#ffffff"),
-        emissiveIntensity: day > 0.6 ? 0.05 : 0.9,
-        roughness: 0.8,
-      }),
-    [tex, day],
-  );
-  const items = useMemo(() => {
-    const r = rng(42);
-    const out: { x: number; z: number; w: number; d: number; h: number }[] = [];
-    // North of the street only: the camera always looks north, so buildings
-    // behind it would only ever block the view on tall phone screens.
-    for (let i = 0; i < 42; i++) {
-      const x = -75 + r() * 150;
-      const z = -26 - r() * 36;
-      out.push({ x, z, w: 4 + r() * 7, d: 4 + r() * 7, h: 6 + Math.pow(r(), 2) * 38 });
-    }
-    return out;
-  }, []);
-  useLayoutEffect(() => {
-    const o = new THREE.Object3D();
-    items.forEach((b, i) => {
-      o.position.set(b.x, b.h / 2, b.z);
-      o.scale.set(b.w, b.h, b.d);
-      o.updateMatrix();
-      ref.current!.setMatrixAt(i, o.matrix);
+/**
+ * Painted panoramic horizon (generated with Higgsfield): tree lines and
+ * distant rooftops wrapped on an open cylinder beyond the fog. The lower band
+ * keeps the painting; the upper sky blends into the live sky dome colours so
+ * the time of day still reads. One draw call, one texture.
+ */
+function Backdrop({ day }: { day: number }) {
+  const mat = useMemo(() => {
+    const top = new THREE.Color("#050a18").lerp(new THREE.Color("#3f7fc4"), day);
+    const horizon = new THREE.Color("#1a2238").lerp(new THREE.Color("#f3d9b5"), day);
+    // Night: dim, cool. Dusk: full painting. Midday: slightly bleached.
+    const tint = new THREE.Color("#3b4666").lerp(
+      new THREE.Color("#ffffff"),
+      Math.min(1, day * 2.2),
+    );
+    const uMap = { value: null as THREE.Texture | null };
+    const uHas = { value: 0 };
+    const m = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      depthWrite: false,
+      fog: false,
+      uniforms: {
+        map: uMap,
+        hasMap: uHas,
+        top: { value: top },
+        horizon: { value: horizon },
+        tint: { value: tint },
+        skyMix: { value: THREE.MathUtils.smoothstep(day, 0.45, 0.85) },
+      },
+      vertexShader:
+        "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
+      fragmentShader: [
+        "uniform sampler2D map; uniform float hasMap; uniform vec3 top; uniform vec3 horizon; uniform vec3 tint; uniform float skyMix;",
+        "varying vec2 vUv;",
+        "void main(){",
+        "  vec3 sky = mix(horizon, top, pow(clamp((vUv.y-0.18)*1.4,0.0,1.0),0.7));",
+        "  vec3 img = texture2D(map, vUv).rgb * tint;",
+        "  float band = 1.0 - smoothstep(0.34, 0.62, vUv.y);",
+        "  float keep = hasMap * max(band, 1.0 - skyMix);",
+        "  gl_FragColor = vec4(mix(sky, img, keep), 1.0);",
+        "  #include <tonemapping_fragment>",
+        "  #include <colorspace_fragment>",
+        "}",
+      ].join("\n"),
     });
-    ref.current!.instanceMatrix.needsUpdate = true;
-  }, [items]);
+    new THREE.TextureLoader().load("/f365/backdrop.webp", (t) => {
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.wrapS = THREE.MirroredRepeatWrapping;
+      t.repeat.set(3, 1);
+      uMap.value = t;
+      uHas.value = 1;
+    });
+    return m;
+  }, [day]);
   return (
-    <instancedMesh
-      ref={ref}
-      name="city-skyline"
-      args={[undefined, undefined, items.length]}
-      material={mat}
-      frustumCulled={false}
-    >
-      <boxGeometry />
-    </instancedMesh>
+    <mesh name="horizon-backdrop" material={mat} position={[0, 15, 0]} renderOrder={-1}>
+      <cylinderGeometry args={[118, 118, 40, 48, 1, true]} />
+    </mesh>
   );
 }
 
@@ -134,20 +113,47 @@ function Trees() {
     ],
     [],
   );
+  // Each crown is a cluster of three soft puffs in slightly different greens,
+  // all in one instanced draw call.
+  const puffs = useMemo(() => {
+    const out: { p: THREE.Vector3; s: number; c: THREE.Color }[] = [];
+    const greens = ["#3d7443", "#4f8a4a", "#2f6138", "#5a9450"];
+    spots.forEach(([x, z, k], i) => {
+      const offs: [number, number, number, number][] = [
+        [0, 2.7, 0, 1.25],
+        [0.55, 2.35, 0.35, 0.95],
+        [-0.5, 2.45, -0.3, 1.0],
+        [0.1, 3.35, -0.1, 0.8],
+      ];
+      offs.forEach(([ox, oy, oz, os], j) =>
+        out.push({
+          p: new THREE.Vector3(x + ox * k, oy * k, z + oz * k),
+          s: os * k,
+          c: new THREE.Color(greens[(i + j) % greens.length]),
+        }),
+      );
+    });
+    return out;
+  }, [spots]);
   useLayoutEffect(() => {
     const o = new THREE.Object3D();
     spots.forEach(([x, z, s], i) => {
-      o.position.set(x, 0.9 * s, z);
-      o.scale.set(s, s, s);
+      o.position.set(x, 1.0 * s, z);
+      o.scale.set(s, s * 1.1, s);
       o.updateMatrix();
       trunk.current!.setMatrixAt(i, o.matrix);
-      o.position.set(x, 2.6 * s, z);
+    });
+    puffs.forEach((pf, i) => {
+      o.position.copy(pf.p);
+      o.scale.setScalar(pf.s);
       o.updateMatrix();
       crown.current!.setMatrixAt(i, o.matrix);
+      crown.current!.setColorAt(i, pf.c);
     });
     trunk.current!.instanceMatrix.needsUpdate = true;
     crown.current!.instanceMatrix.needsUpdate = true;
-  }, [spots]);
+    if (crown.current!.instanceColor) crown.current!.instanceColor.needsUpdate = true;
+  }, [spots, puffs]);
   return (
     <group name="street-trees">
       <instancedMesh
@@ -156,19 +162,21 @@ function Trees() {
         material={M.floorWoodDark}
         castShadow
       >
-        <cylinderGeometry args={[0.12, 0.18, 1.8, 8]} />
+        <cylinderGeometry args={[0.1, 0.17, 2.0, 8]} />
       </instancedMesh>
       <instancedMesh
         ref={crown}
-        args={[undefined, undefined, spots.length]}
-        material={M.plant}
+        args={[undefined, undefined, puffs.length]}
+        material={foliage}
         castShadow
       >
-        <icosahedronGeometry args={[1.3, 1]} />
+        <icosahedronGeometry args={[1, 2]} />
       </instancedMesh>
     </group>
   );
 }
+
+const foliage = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.85 });
 
 function StreetLamp({ x, z, on }: { x: number; z: number; on: boolean }) {
   const bulb = useMemo(() => (on ? glow("#ffd9a0", 3) : M.white), [on]);
@@ -223,7 +231,7 @@ function Car({
   );
 }
 
-/** Branded Fixing365 service van parked outside HQ. */
+/** Branded Fixing365 service van parked on the street. */
 function ServiceVan() {
   return (
     <group name="fixing365-service-van" position={[-18.5, 0, 7.4]}>
@@ -264,31 +272,58 @@ export function WorldEnvironment({ shadows }: { shadows: boolean }) {
     const a = ((h - 6) / 12) * Math.PI;
     return new THREE.Vector3(Math.cos(a) * 18, Math.max(4, Math.sin(a) * 22), 14);
   }, []);
-  const sunColor = new THREE.Color("#9fb6ff").lerp(new THREE.Color("#ffe3b8"), day);
+  // Warm golden light when the sun is low, clean warm white at midday,
+  // moonlit blue at night.
+  const golden = 1 - Math.abs(day - 0.5) * 2;
+  const sunColor = new THREE.Color("#9fb6ff")
+    .lerp(new THREE.Color("#fff1dc"), day)
+    .lerp(new THREE.Color("#ffb877"), Math.max(0, golden) * 0.6);
   const bg = new THREE.Color("#0a1120").lerp(new THREE.Color("#c9d8e6"), day);
+  const haze = new THREE.Color("#141c33").lerp(new THREE.Color("#ecd9bf"), day);
+  const mobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   return (
     <group name="world-environment">
       <color attach="background" args={[bg.getStyle()]} />
-      <fog attach="fog" args={[bg.getStyle(), 45, 110]} />
+      <fog attach="fog" args={[haze.getStyle(), 42, 112]} />
       <Sky day={day} />
-      <hemisphereLight args={[night ? "#51659a" : "#cfe6ff", "#4a3b2c", 0.5 + day * 0.8]} />
-      <ambientLight intensity={0.25 + day * 0.25} />
+      <hemisphereLight args={[night ? "#51659a" : "#dcebff", "#6b5238", 0.45 + day * 0.75]} />
+      <ambientLight intensity={0.18 + day * 0.2} />
       <directionalLight
         name="sun-key"
         position={night ? [-12, 20, 10] : sun.toArray()}
-        intensity={night ? 0.55 : 1.2 + day * 1.8}
+        intensity={night ? 0.6 : 1.6 + day * 1.9}
         color={sunColor}
         castShadow={shadows}
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={mobile ? [1024, 1024] : [2048, 2048]}
         shadow-bias={-0.0003}
-        shadow-normalBias={0.035}
-        shadow-camera-left={-16}
-        shadow-camera-right={16}
-        shadow-camera-top={12}
-        shadow-camera-bottom={-12}
+        shadow-normalBias={0.03}
+        shadow-radius={4}
+        shadow-camera-left={-15}
+        shadow-camera-right={15}
+        shadow-camera-top={11}
+        shadow-camera-bottom={-11}
         shadow-camera-far={70}
       />
+      {/* Cool rim from behind the house so rooflines separate from the sky. */}
+      <directionalLight
+        name="rim"
+        position={[-8, 9, -18]}
+        intensity={night ? 0.35 : 0.5 + day * 0.4}
+        color={night ? "#7f9cff" : "#cfe2ff"}
+      />
+      {!mobile && day < 0.55 && (
+        <Sparkles
+          name="dusk-fireflies"
+          count={40}
+          scale={[26, 3, 14]}
+          position={[1, 1.4, 2]}
+          size={3}
+          speed={0.25}
+          opacity={0.8}
+          color="#ffd98a"
+        />
+      )}
       <DreiEnv resolution={64} frames={1}>
         <Lightformer intensity={1.2 + day * 1.5} position={[0, 10, 4]} scale={[20, 6, 1]} />
         <Lightformer
@@ -337,11 +372,12 @@ export function WorldEnvironment({ shadows }: { shadows: boolean }) {
           cast={false}
         />
       </StaticBatch>
-      <Skyline day={day} />
+      <Backdrop day={day} />
       <Trees />
       {night && <pointLight position={[-10, 4, 6]} intensity={8} distance={14} color="#ffcf8a" />}
       <StaticBatch name="street-props" version={night ? 1 : 0}>
-        {[-34, -14, 15, 35].map((x) => (
+        {/* Lamps sit midway between the street trees so no pole ever runs through a crown. */}
+        {[-25, -5, 9, 28].map((x) => (
           <StreetLamp key={x} x={x} z={5.6} on={night || day < 0.5} />
         ))}
         <Car x={-1} z={10.6} color="#274b7a" />

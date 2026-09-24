@@ -161,23 +161,6 @@ export function Shell() {
         <B p={[-1, 0.08, -5.9]} s={[6, 0.12, 0.04]} m={M.trim} cast={false} />
         <B p={[-3.9, 0.08, -4.7]} s={[0.04, 0.12, 2.6]} m={M.trim} cast={false} />
         <B p={[1.9, 0.08, -1.3]} s={[0.04, 0.12, 4.2]} m={M.trim} cast={false} />
-
-        {/* Exposed ceiling beams, cutaway so the camera can look in */}
-        {[-7.6, -5.8, -2.6, -1, 0.6, 3.4, 5.2].map((x) => (
-          <B
-            key={x}
-            name="ceiling-beam"
-            p={[x, H + 0.03, -2]}
-            s={[0.16, 0.2, 8.1]}
-            m={M.floorWoodDark}
-          />
-        ))}
-        <B
-          name="ceiling-ridge"
-          p={[-1.5, H + 0.17, -2.8]}
-          s={[15.1, 0.14, 0.18]}
-          m={M.floorWoodDark}
-        />
       </StaticBatch>
       <group name="house-lights">
         <pointLight

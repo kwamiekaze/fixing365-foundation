@@ -57,24 +57,6 @@ export const zones: ZoneConfig[] = [
     loadRadius: 22,
     view: homeView,
   },
-  {
-    id: "hq",
-    name: "Fixing365 HQ",
-    short: "HQ",
-    blurb: "Not sure what it is? Start at the desk and describe it.",
-    center: [-25, 0, -2],
-    loadRadius: 13,
-    view: { position: [-17.5, 6.5, 13.5], target: [-25, 1.7, -1.6] },
-  },
-  {
-    id: "block",
-    name: "Main Street",
-    short: "Main Street",
-    blurb: "Shops, rentals and commercial property repairs.",
-    center: [25, 0, -2],
-    loadRadius: 13,
-    view: { position: [37.5, 11.5, 19.5], target: [25.8, 3.6, -1.8] },
-  },
 ];
 
 const v = (position: Vec3, target: Vec3): CameraView => ({ position, target });
@@ -399,66 +381,6 @@ export const spots: SpotConfig[] = [
     view: v([3, 11, 12], [-1, 3, -3]),
     xray: true,
   },
-  // HQ
-  {
-    id: "hq-desk",
-    zone: "hq",
-    area: "HQ",
-    service: "",
-    chip: "Describe it",
-    title: "Not sure what it is?",
-    problem: "Tell us what you see, hear or smell. Symptoms are more useful than a diagnosis.",
-    fix: "We route your request to the right qualified provider and help you compare quotes or book a visit.",
-    related: [
-      "Home inspection repair lists",
-      "Rental property repairs",
-      "Preventive maintenance",
-      "Urgent repairs",
-    ],
-    marker: [-25, 2.9, -2.0],
-    view: v([-22.4, 2.9, 3.6], [-25, 1.5, -2.2]),
-  },
-  // Main Street block
-  {
-    id: "storefront-lights",
-    zone: "block",
-    area: "Main Street",
-    service: "electrical",
-    chip: "Shop sign flickering",
-    title: "Storefront sign and lights flickering",
-    problem:
-      "The café sign and front lights flicker at closing time, which usually means a failing driver or connection.",
-    fix: "A licensed commercial electrician replaces the driver, tightens connections and checks the lighting circuit.",
-    related: ["Commercial lighting", "Sign repair", "Commercial electrical"],
-    marker: [25, 4.4, 1.4],
-    view: v([27, 3.6, 11], [25, 2.6, 1.0]),
-  },
-  {
-    id: "rooftop-hvac",
-    zone: "block",
-    area: "Main Street",
-    service: "hvac",
-    chip: "Rooftop unit down",
-    title: "Rooftop AC unit down",
-    problem: "The rooftop unit over the café stopped cycling and the dining room is heating up.",
-    fix: "A commercial HVAC tech diagnoses the unit and schedules preventive maintenance to avoid repeat outages.",
-    related: ["Commercial HVAC", "Preventive maintenance", "Emergency service"],
-    marker: [27, 9.9, -3],
-    view: v([34, 13.5, 8], [27, 8.2, -3]),
-  },
-  {
-    id: "apartment-lock",
-    zone: "block",
-    area: "Main Street",
-    service: "handyman",
-    chip: "Broken rental lock",
-    title: "Broken lock on the upstairs rental",
-    problem: "The upstairs tenant's deadbolt will not latch after move-out.",
-    fix: "A handyman replaces or rekeys the lock and handles the rest of the turnover punch list.",
-    related: ["Lock repair & rekeying", "Rental turnover repairs", "Door repair"],
-    marker: [31.4, 6.6, -3.0],
-    view: v([37.5, 6.6, 3.2], [31.1, 5.1, -3.0]),
-  },
 ];
 
 export const getZone = (id?: string | null) => zones.find((z) => z.id === id);
@@ -471,8 +393,8 @@ export const heroSpotForService = (service: string) =>
 
 /**
  * Idle cinematic tour. After a stretch with no taps, the camera cranes
- * through the neighborhood on its own: establishing shot, room by room
- * through the house, out to the yard, down Main Street and back to HQ.
+ * around the house on its own: establishing shot, room by room through
+ * the house, then out to the yard.
  * Travel time between stops is worked out from the distance flown.
  */
 export interface TourStop {
@@ -513,9 +435,4 @@ export const tour: TourStop[] = [
   spotStop("ev-charger", 2.4),
   spotStop("condenser", 2.6),
   spotStop("fence-gate", 2.6),
-  { caption: "Main Street", view: getZone("block")!.view, hold: 3 },
-  spotStop("storefront-lights", 2.8),
-  spotStop("rooftop-hvac", 2.8),
-  { caption: "Fixing365 HQ", view: getZone("hq")!.view, hold: 2.8 },
-  spotStop("hq-desk", 3.2),
 ];

@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import type { ReactNode } from "react";
 import type { Vec3 } from "@/config/world";
 import { rigState, world } from "./store";
+import { texturize } from "./surfaces";
 
 /**
  * Shared material library. Reusing one material per surface keeps shader
@@ -68,6 +69,18 @@ export const M = {
   gutter: std("#e7e7e2", 0.4, 0.3),
   duct: std("#b8bec6", 0.35, 0.8),
 };
+
+// Photographic surfaces (Higgsfield generated, world-space mapped).
+texturize(M.floorWood, "wood-floor", 0.45);
+texturize(M.floorTile, "floor-tile", 0.42);
+texturize(M.wallBath, "subway-tile", 0.9, "#f4f7fa");
+texturize(M.siding, "siding", 0.5);
+texturize(M.sidingLight, "siding", 0.5, "#c9d4de");
+texturize(M.grass, "lawn", 0.22);
+texturize(M.grassDark, "lawn", 0.12, "#b9c9ae");
+texturize(M.shingle, "shingles", 0.45);
+texturize(M.shingleDark, "shingles", 0.45, "#b5b8bd");
+texturize(M.sidewalk, "pavers", 0.33);
 
 /** Walls that fade in X-Ray mode. */
 export const xrayMaterials = [

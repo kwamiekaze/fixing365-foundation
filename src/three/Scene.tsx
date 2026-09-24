@@ -8,8 +8,6 @@ import { DebugInfo } from "./world/DebugInfo";
 import { WorldEnvironment } from "./world/Environment";
 import { ZoneSlot } from "./world/ZoneSlot";
 import { HouseLow } from "./zones/house/HouseLow";
-import { HqLow } from "./zones/hq/HqLow";
-import { BlockLow } from "./zones/block/BlockLow";
 
 /*
  * Each zone's detailed chunk is its own code-split module. Nothing about a
@@ -18,8 +16,6 @@ import { BlockLow } from "./zones/block/BlockLow";
  * component, a lazy Detail chunk, and one ZoneSlot below.
  */
 const HouseDetail = lazy(() => import("./zones/house/HouseDetail"));
-const HqDetail = lazy(() => import("./zones/hq/HqDetail"));
-const BlockDetail = lazy(() => import("./zones/block/BlockDetail"));
 
 interface Props {
   onZoneDetail?: (zone: ZoneId, loaded: boolean) => void;
@@ -55,8 +51,6 @@ export default function Scene({ onZoneDetail }: Props) {
         <WorldEnvironment shadows={shadows} />
       </Suspense>
       <ZoneSlot id="house" low={<HouseLow />} Detail={HouseDetail} onDetail={onZoneDetail} />
-      <ZoneSlot id="hq" low={<HqLow />} Detail={HqDetail} onDetail={onZoneDetail} />
-      <ZoneSlot id="block" low={<BlockLow />} Detail={BlockDetail} onDetail={onZoneDetail} />
       <CameraRig />
       <DebugInfo />
     </Canvas>

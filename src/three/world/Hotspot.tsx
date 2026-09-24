@@ -11,6 +11,38 @@ const discGeo = new THREE.CircleGeometry(0.17, 32);
 const barGeo = new THREE.PlaneGeometry(0.05, 0.14);
 const dotGeo = new THREE.CircleGeometry(0.032, 16);
 const hitGeo = new THREE.SphereGeometry(0.5, 8, 6);
+const haloGeo = new THREE.CircleGeometry(0.42, 32);
+/** Soft radial glow behind each marker so it reads as light, not a sticker. */
+function makeHalo() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 64;
+  const g = c.getContext("2d")!;
+  const r = g.createRadialGradient(32, 32, 4, 32, 32, 32);
+  r.addColorStop(0, "rgba(255,255,255,0.5)");
+  r.addColorStop(0.4, "rgba(255,255,255,0.18)");
+  r.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = r;
+  g.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c);
+  return new THREE.MeshBasicMaterial({
+    map: t,
+    color: "#ff9a4a",
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+}
+let halos: [THREE.MeshBasicMaterial, THREE.MeshBasicMaterial] | null = null;
+function getHalos() {
+  if (!halos) {
+    const a = makeHalo();
+    const b = a.clone();
+    b.color.set("#5dffa0");
+    halos = [a, b];
+  }
+  return halos;
+}
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 const tmp = new THREE.Vector3();
 const white = new THREE.MeshBasicMaterial({ color: "#ffffff", toneMapped: false });
@@ -103,6 +135,7 @@ export function Hotspot({
         <Billboard position={spot.marker} name={`marker-${id}`} ref={holder}>
           <group onClick={choose} onPointerOver={over} onPointerOut={out}>
             <mesh geometry={hitGeo} material={hitMat} />
+            <mesh geometry={haloGeo} material={getHalos()[fixed ? 1 : 0]} renderOrder={9} />
             <mesh ref={ring} geometry={ringGeo} material={ringMat.current} renderOrder={10} />
             <group ref={disc}>
               <mesh geometry={discGeo} material={discMat.current} renderOrder={11} />
@@ -133,7 +166,15 @@ export function Hotspot({
           </group>
         </Billboard>
       )}
-      {selected && <pointLight position={spot.marker} intensity={6} distance={4} color="#fff1dc" />}
+      {selected && (
+        <pointLight
+          position={spot.marker}
+          intensity={fixed ? 7 : 9}
+          distance={5}
+          decay={1.4}
+          color={fixed ? "#e9fff2" : "#fff0d8"}
+        />
+      )}
     </group>
   );
 }
