@@ -22,11 +22,25 @@ function glide(x: number) {
 }
 
 /** Pull the camera back on tall screens so the same composition fits a phone. */
-function framed(view: CameraView, aspect: number) {
+const BASE_FOV = 40;
+
+function framed(view: CameraView, aspect: number, close = false) {
   const target = new THREE.Vector3(...view.target);
   const offset = new THREE.Vector3(...view.position).sub(target);
+  if (close) {
+    // Close-ups are indoors: pulling back on a tall screen would put walls
+    // between camera and subject. Keep the camera where it is and widen the
+    // lens instead, so a phone sees what a desktop sees across.
+    const k = aspect < 1.3 ? 1.08 : 1;
+    const hfov = 2 * Math.atan(Math.tan((BASE_FOV * Math.PI) / 360) * 1.6);
+    const vfov =
+      aspect < 1.3
+        ? Math.min(66, (2 * Math.atan(Math.tan(hfov / 2) / aspect) * 180) / Math.PI)
+        : BASE_FOV;
+    return { position: target.clone().add(offset.multiplyScalar(k)), target, fov: vfov };
+  }
   const k = aspect < 1.3 ? Math.min(2.8, Math.pow(1.3 / aspect, 0.9)) : 1;
-  return { position: target.clone().add(offset.multiplyScalar(k)), target };
+  return { position: target.clone().add(offset.multiplyScalar(k)), target, fov: BASE_FOV };
 }
 
 type Mode = "fly" | "hold" | "free" | "tour";
@@ -93,12 +107,17 @@ export function CameraRig() {
   const aspect = size.width / Math.max(1, size.height);
 
   const view = useMemo(
-    () => framed(getSpot(spotId)?.view ?? getZone(zoneId)?.view ?? homeView, aspect),
+    () => {
+      const spot = getSpot(spotId);
+      return spot
+        ? framed(spot.view, aspect, spot.zone === "house" && spot.area !== "Exterior" && !spot.xray)
+        : framed(getZone(zoneId)?.view ?? homeView, aspect);
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [spotId, zoneId, aspect, nonce],
   );
   const stops = useMemo(
-    () => tour.map((s) => ({ ...s, framed: framed(s.view, aspect) })),
+    () => tour.map((s) => ({ ...s, framed: framed(s.view, aspect, Boolean(s.close)) })),
     [aspect],
   );
 
@@ -114,6 +133,7 @@ export function CameraRig() {
     tourPhaseStart: 0,
     tourLeg: null as Leg | null,
     look: new THREE.Vector3().fromArray(homeView.target),
+    fov: BASE_FOV,
     baseP: new THREE.Vector3().fromArray(homeView.position),
     baseT: new THREE.Vector3().fromArray(homeView.target),
   });
@@ -139,9 +159,11 @@ export function CameraRig() {
     resetRigInput();
     if (world.get().reduced) {
       enterHold(view.position, view.target);
+      s.fov = view.fov;
       return;
     }
     s.leg = makeLeg(s.baseP, s.baseT, view.position, view.target, now());
+    s.fov = view.fov;
     s.mode = "fly";
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
@@ -184,6 +206,7 @@ export function CameraRig() {
     s.tourPhase = "enter";
     const first = stops[0]!;
     s.tourLeg = makeLeg(camera.position, s.look, first.framed.position, first.framed.target, t);
+    s.fov = first.framed.fov;
   };
 
   // Projection shift keeps the subject clear of the headline and the cards.
@@ -255,6 +278,7 @@ export function CameraRig() {
           const next = (s.tourIndex + 1) % stops.length;
           const to = stops[next]!;
           s.tourLeg = makeLeg(P, T, to.framed.position, to.framed.target, t);
+          s.fov = to.framed.fov;
           s.tourIndex = next;
           s.tourPhase = "travel";
           world.set({ tourCaption: null });
@@ -307,7 +331,7 @@ export function CameraRig() {
     const dbg = (window as unknown as { __rig?: { dist: number } }).__rig;
     if (dbg) dbg.dist = camera.position.distanceTo(s.look);
     const cam = camera as THREE.PerspectiveCamera;
-    const fov = Math.min(62, Math.max(24, 40 + i.zoom * 16));
+    const fov = Math.min(72, Math.max(22, s.fov + i.zoom * 16));
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov += (fov - cam.fov) * k;
       cam.updateProjectionMatrix();

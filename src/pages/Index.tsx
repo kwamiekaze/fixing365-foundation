@@ -1,2 +1,6 @@
-import { RepairHouseHero } from "@/components/RepairHouseHero"; import { HomeContent } from "@/components/HomeContent";
-export function IndexPage(){return <><RepairHouseHero/><HomeContent/></>}
+import { RepairHouseHero } from "@/components/RepairHouseHero";
+
+/** The homepage is the 3D neighborhood itself. Other content lives on its own pages. */
+export function IndexPage() {
+  return <RepairHouseHero />;
+}

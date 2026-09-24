@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSceneGestures } from "./useSceneGestures";
 import { Link } from "@tanstack/react-router";
-import { ArrowDown, RotateCcw, Rows3, ScanEye, ScanSearch } from "lucide-react";
+import { RotateCcw, Rows3, ScanEye, ScanSearch } from "lucide-react";
 import { Button } from "./ui/button";
 import { LoadingScreen } from "./LoadingScreen";
 import { Fallback2D } from "./Fallback2D";
@@ -49,7 +49,7 @@ export function RepairHouseHero() {
 
   return (
     <section
-      className="relative h-[calc(100svh-4rem)] min-h-[36rem] max-h-[75rem] overflow-hidden border-b border-border md:h-[calc(100vh-4rem)]"
+      className="relative min-h-0 flex-1 overflow-hidden"
       aria-label="Interactive Fixing365 neighborhood"
     >
       <div
@@ -196,12 +196,6 @@ export function RepairHouseHero() {
               ))}
             </div>
           </div>
-          <a
-            href="#below-house"
-            className="pointer-events-auto mx-auto mt-1 hidden w-fit items-center gap-2 text-xs font-bold text-foreground/70 md:flex"
-          >
-            Scroll for more <ArrowDown className="size-4" />
-          </a>
         </div>
       )}
     </section>

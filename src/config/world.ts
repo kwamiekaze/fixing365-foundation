@@ -130,8 +130,8 @@ export const spots: SpotConfig[] = [
       "Cable concealment",
       "Soundbar installation",
     ],
-    marker: [-1, 2.3, -5.3],
-    view: v([0.9, 2.5, 1.6], [-1, 1.1, -5.5]),
+    marker: [-0.2, 2.35, -5.4],
+    view: v([0.4, 2.2, -1.3], [-0.1, 1.2, -5.5]),
   },
   {
     id: "ceiling-fan",
@@ -176,8 +176,8 @@ export const spots: SpotConfig[] = [
       "The flat-pack bookshelf is half assembled with leftover screws and the instructions on the floor.",
     fix: "A handyman finishes the build, anchors it to the wall and hauls the packaging to your bin.",
     related: ["Furniture assembly", "Furniture anchoring", "Shelving installation"],
-    marker: [-0.4, 1.4, 0.8],
-    view: v([1.8, 2.4, 4.6], [-0.4, 0.4, 0.9]),
+    marker: [-0.4, 1.7, 0.0],
+    view: v([-2.5, 3.1, 3.4], [-0.3, 0.4, -0.1]),
   },
   {
     id: "thermostat",
@@ -480,16 +480,28 @@ export interface TourStop {
   view: CameraView;
   /** Seconds to hold on the framing, drifting in slowly. */
   hold: number;
+  /** Indoor close-up: widen the lens on phones instead of pulling back through walls. */
+  close?: boolean;
 }
 const spotStop = (id: string, hold = 3.2): TourStop => {
   const s = getSpot(id)!;
-  return { caption: s.title, view: s.view, hold };
+  return {
+    caption: s.title,
+    view: s.view,
+    hold,
+    close: s.zone === "house" && s.area !== "Exterior",
+  };
 };
 export const tour: TourStop[] = [
   { caption: "If it’s broken, start here.", view: homeView, hold: 3.5 },
   spotStop("kitchen-pipe"),
   spotStop("fridge", 2.6),
-  { caption: "The living room", view: v([3.2, 3.4, 3.6], [-1.6, 1.0, -3.6]), hold: 2.4 },
+  {
+    caption: "The living room",
+    view: v([1.2, 2.9, 1.2], [-1.6, 1.0, -3.6]),
+    hold: 2.4,
+    close: true,
+  },
   spotStop("tv-mount", 2.8),
   spotStop("ceiling-fan", 2.6),
   spotStop("thermostat", 2.6),
