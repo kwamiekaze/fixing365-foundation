@@ -10,7 +10,8 @@ import { getZone, spotsForZone, zones, type ZoneId } from "@/config/world";
 import { supportsWebGL } from "@/lib/webgl";
 import { useWorld, world } from "@/three/world/store";
 
-const Scene = lazy(() => import("@/three/Scene"));
+const Scene = lazyWithRetry(() => import("@/three/Scene"));
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 export function RepairHouseHero() {
   const [simple, setSimple] = useState(false);

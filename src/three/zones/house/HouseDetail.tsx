@@ -13,7 +13,6 @@ import { Shell } from "./Shell";
  * replaced by optimized GLBs one at a time.
  */
 export default function HouseDetail() {
-  useEffect(() => console.log("DBG house committed", performance.now() | 0), []);
   return (
     <group name="house-detail">
       <XrayFader />
