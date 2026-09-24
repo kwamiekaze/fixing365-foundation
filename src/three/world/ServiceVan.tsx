@@ -11,7 +11,7 @@ import type { Vec3 } from "@/config/world";
  * the near side uses the side photo, the far side a mirrored copy with the
  * logo, slogan and phone laid back on the right way round, and the rear
  * doors and front end use their own photos with the manufacturer badge
- * painted out. Real 3D wheels, mirrors and windshield glass sit on top.
+ * painted out. Real 3D wheels, dark wheel wells and windshield glass sit on top; mirrors come from the photos.
  * All five skins together weigh about 210 KB, so it loads fast on phones.
  */
 
@@ -24,7 +24,7 @@ const WIDTH = 2.02;
 
 /** Side silhouette in photo pixels (column, row), nose at column 0. */
 const PROFILE: [number, number][] = [
-  [4, 508],
+  [4, 489],
   [2, 432],
   [10, 330],
   [40, 290],
@@ -37,8 +37,8 @@ const PROFILE: [number, number][] = [
   [1175, 13],
   [1196, 22],
   [1214, 60],
-  [1218, 498],
-  [1206, 510],
+  [1218, 489],
+  [1206, 490],
 ];
 
 const toX = (col: number) => (col - 1245 / 2) * PX;
@@ -201,10 +201,10 @@ function VanBody() {
           <mesh
             key={`${wx}-${sd}`}
             material={M.well}
-            position={[wx, 0.42, sd * (WIDTH / 2 + 0.002)]}
+            position={[wx, 0.42, sd * (WIDTH / 2 + 0.008)]}
             rotation={[0, sd > 0 ? 0 : Math.PI, 0]}
           >
-            <circleGeometry args={[0.47, 32]} />
+            <circleGeometry args={[0.49, 48]} />
           </mesh>
         )),
       )}
@@ -216,17 +216,7 @@ function VanBody() {
       >
         <boxGeometry args={[0.015, wsLen, WIDTH - 0.16]} />
       </mesh>
-      {/* mirrors on their arms, underbody and a roof antenna */}
-      {[1, -1].map((sd) => (
-        <group key={sd} position={[toX(236), toY(250), sd * (WIDTH / 2 + 0.16)]}>
-          <mesh material={M.trim} castShadow>
-            <boxGeometry args={[0.1, 0.34, 0.12]} />
-          </mesh>
-          <mesh material={M.trim} position={[0.02, -0.1, -sd * 0.1]}>
-            <boxGeometry args={[0.05, 0.05, 0.16]} />
-          </mesh>
-        </group>
-      ))}
+      {/* underbody and a roof antenna */}
       <mesh material={M.trim} position={[0, 0.28, 0]}>
         <boxGeometry args={[LENGTH - 0.5, 0.18, WIDTH - 0.2]} />
       </mesh>
