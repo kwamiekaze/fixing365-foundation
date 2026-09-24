@@ -19,7 +19,7 @@ const L = 5.9; // length
 const W = 2.04; // width
 const FONT = '"Space Grotesk", "Arial Black", Arial, sans-serif';
 
-function badge(g: CanvasRenderingContext2D, x: number, y: number, s: number) {
+export function badge(g: CanvasRenderingContext2D, x: number, y: number, s: number) {
   const r = s * 0.24;
   const grad = g.createLinearGradient(0, y, 0, y + s);
   grad.addColorStop(0, "#ffa24d");

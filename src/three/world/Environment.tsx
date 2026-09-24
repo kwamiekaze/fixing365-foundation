@@ -1,7 +1,7 @@
 import { StaticBatch } from "./StaticBatch";
 import { NEIGHBOR_HOMES, Neighborhood } from "./Neighborhood";
 import { Neighbors } from "./Npcs";
-import { ServiceVanDetailed } from "./ServiceVan";
+import { ServiceVan } from "./ServiceVanModel";
 import { GrassField, RealisticTrees, type TreeSpec } from "./Foliage";
 
 const STREET_TREES: TreeSpec[] = [
@@ -296,7 +296,7 @@ export function WorldEnvironment({ shadows }: { shadows: boolean }) {
       <GrassField area={[-38, -16, 42, 27]} avoid={GRASS_AVOID} />
       <Neighborhood />
       <Neighbors />
-      <ServiceVanDetailed position={[5.2, 0, 10.85]} rotation={Math.PI} />
+      <ServiceVan position={[5.2, 0, 10.85]} rotation={Math.PI} night={night} />
       {night && <pointLight position={[-10, 4, 6]} intensity={8} distance={14} color="#ffcf8a" />}
       <StaticBatch name="street-props" version={night ? 1 : 0}>
         {/* Lamps sit midway between the street trees so no pole ever runs through a crown. */}
