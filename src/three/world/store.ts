@@ -23,7 +23,7 @@ export interface WorldState {
 
 let state: WorldState = {
   zone: "house",
-  spot: null,
+  spot: "welcome",
   xray: false,
   fixed: {},
   reduced: false,

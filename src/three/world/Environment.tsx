@@ -1,4 +1,5 @@
 import { StaticBatch } from "./StaticBatch";
+import { Neighborhood } from "./Neighborhood";
 import { Environment as DreiEnv, Lightformer, Sparkles } from "@react-three/drei";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -374,6 +375,7 @@ export function WorldEnvironment({ shadows }: { shadows: boolean }) {
       </StaticBatch>
       <Backdrop day={day} />
       <Trees />
+      <Neighborhood />
       {night && <pointLight position={[-10, 4, 6]} intensity={8} distance={14} color="#ffcf8a" />}
       <StaticBatch name="street-props" version={night ? 1 : 0}>
         {/* Lamps sit midway between the street trees so no pole ever runs through a crown. */}

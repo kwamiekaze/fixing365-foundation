@@ -7,6 +7,49 @@ import { Hotspot } from "../../world/Hotspot";
 import { Label } from "../../world/Label";
 import { useFixed } from "../../world/store";
 
+const showerGlass = new THREE.MeshStandardMaterial({
+  color: "#d6eef2",
+  roughness: 0.04,
+  metalness: 0.15,
+  transparent: true,
+  opacity: 0.2,
+  depthWrite: false,
+  envMapIntensity: 1.6,
+});
+const glassEdge = new THREE.MeshStandardMaterial({
+  color: "#9fd3c7",
+  roughness: 0.1,
+  transparent: true,
+  opacity: 0.55,
+  depthWrite: false,
+});
+
+/** Frameless glass bath screen: fixed panel at the tap end, hinged door swung slightly open. */
+function ShowerScreen() {
+  const H = 1.74;
+  const y = 0.57 + H / 2;
+  return (
+    <group name="obj-glass-shower-door" position={[5.0, 0, -5.1]}>
+      <B p={[0.44, y, -0.01]} s={[0.9, H, 0.01]} m={showerGlass} cast={false} />
+      <B p={[0.44, 0.57 + H, -0.01]} s={[0.9, 0.012, 0.014]} m={glassEdge} cast={false} />
+      <B p={[-0.005, y, -0.01]} s={[0.012, H, 0.014]} m={glassEdge} cast={false} />
+      <B p={[0.88, y, -0.01]} s={[0.03, H, 0.04]} m={M.chrome} name="obj-screen-wall-profile" />
+      <B p={[0.44, 0.585, -0.01]} s={[0.9, 0.025, 0.03]} m={M.chrome} />
+      <group position={[-0.02, 0, -0.01]} rotation={[0, 0.55, 0]} name="obj-shower-door-leaf">
+        <B p={[-0.38, y, 0]} s={[0.76, H, 0.01]} m={showerGlass} cast={false} />
+        <B p={[-0.38, 0.57 + H, 0]} s={[0.76, 0.012, 0.014]} m={glassEdge} cast={false} />
+        <B p={[-0.755, y, 0]} s={[0.012, H, 0.014]} m={glassEdge} cast={false} />
+        {[0.95, 1.95].map((hy) => (
+          <B key={hy} p={[0, hy, 0]} s={[0.05, 0.08, 0.035]} m={M.chrome} name="obj-shower-hinge" />
+        ))}
+        <C p={[-0.66, 1.35, 0.04]} radius={0.012} h={0.36} m={M.chrome} name="obj-shower-handle" />
+        <B p={[-0.66, 1.2, 0.02]} s={[0.02, 0.02, 0.04]} m={M.chrome} />
+        <B p={[-0.66, 1.5, 0.02]} s={[0.02, 0.02, 0.04]} m={M.chrome} />
+      </group>
+    </group>
+  );
+}
+
 function Bath() {
   const fixed = useFixed("shower-leak");
   const mirror = useMemo(
@@ -30,6 +73,7 @@ function Bath() {
           )}
           <B p={[0, 1.4, -0.38]} s={[1.8, 1.7, 0.02]} m={M.porcelain} cast={false} />
         </group>
+        <ShowerScreen />
         <group name="obj-shower-fixture" position={[5.9, 0, -5.5]}>
           <Pipe a={[0, 1.95, 0]} b={[-0.25, 2.0, 0]} radius={0.018} m={M.chrome} />
           <C p={[-0.28, 1.97, 0]} r={[0, 0, -0.5]} radius={0.07} top={0.04} h={0.06} m={M.chrome} />

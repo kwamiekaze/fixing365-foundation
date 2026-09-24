@@ -110,7 +110,14 @@ export function CameraRig() {
     () => {
       const spot = getSpot(spotId);
       return spot
-        ? framed(spot.view, aspect, spot.zone === "house" && spot.area !== "Exterior" && !spot.xray)
+        ? framed(
+            spot.view,
+            aspect,
+            spot.zone === "house" &&
+              spot.area !== "Exterior" &&
+              spot.area !== "Welcome" &&
+              !spot.xray,
+          )
         : framed(getZone(zoneId)?.view ?? homeView, aspect);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -219,6 +226,7 @@ export function CameraRig() {
     if (!w.touring) {
       if (w.spot && w.card === "full" && wide) want.x = size.width * 0.19;
       else if (w.spot && w.card === "full") want.y = size.height * 0.2;
+      else if (w.spot === "welcome" && w.card === "compact" && wide) want.x = -size.width * 0.12;
       else if (w.spot && w.card === "compact") want.y = size.height * (wide ? 0.06 : 0.1);
       else if (wide && !w.explored) want.x = -size.width * 0.11;
     }
@@ -290,7 +298,8 @@ export function CameraRig() {
       // that never line up, like a hand holding the shot.
       const e = t - s.holdStart;
       const ramp = w.reduced ? 0 : smootherstep(e / 2.5);
-      const yaw = Math.sin((e * Math.PI * 2) / 22) * (w.spot ? 0.07 : 0.16) * ramp;
+      const yaw =
+        Math.sin((e * Math.PI * 2) / 22) * (w.spot && w.spot !== "welcome" ? 0.07 : 0.16) * ramp;
       off.copy(s.anchorP).sub(s.anchorT).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
       P.copy(s.anchorT).add(off);
       P.x += Math.sin(e * 0.35) * 0.05 * s.holdScale * ramp;

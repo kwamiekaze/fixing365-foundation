@@ -6,7 +6,6 @@ import { Button } from "./ui/button";
 import { LoadingScreen } from "./LoadingScreen";
 import { Fallback2D } from "./Fallback2D";
 import { ServicePanel } from "./ServicePanel";
-import { AllServicesDrawer } from "./AllServicesDrawer";
 import { getZone, spotsForZone, zones, type ZoneId } from "@/config/world";
 import { supportsWebGL } from "@/lib/webgl";
 import { useWorld, world } from "@/three/world/store";
@@ -68,28 +67,6 @@ export function RepairHouseHero() {
       <div
         className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-64 bg-gradient-to-b from-panel-strong/90 to-transparent transition-opacity duration-500 ${showIntro ? "opacity-100" : "opacity-50"}`}
       />
-
-      <div
-        className={`pointer-events-none absolute left-0 top-0 z-20 max-w-3xl px-5 pt-16 transition-all duration-500 md:px-10 md:pt-10 lg:px-16 ${showIntro ? "opacity-100" : "pointer-events-none -translate-y-2 opacity-0"}`}
-        aria-hidden={!showIntro}
-      >
-        <h1 className="max-w-2xl text-balance font-display text-[2.1rem] font-bold leading-[1.02] md:text-6xl">
-          If it’s broken, start here.
-        </h1>
-        <p className="mt-3 max-w-md text-sm leading-6 text-foreground/80 md:mt-4 md:text-base md:leading-7">
-          Tap anything that’s broken in the house. We’ll show you the fix and the right provider for
-          it.
-        </p>
-        <div className="pointer-events-auto mt-5 flex flex-wrap gap-3">
-          <Button asChild variant="hero" size="lg">
-            <Link to="/request">
-              <ScanSearch />
-              Tell us what’s broken
-            </Link>
-          </Button>
-          <AllServicesDrawer />
-        </div>
-      </div>
 
       {explored && !touring && current && (
         <div className="pointer-events-none absolute left-5 top-16 z-20 md:left-10 md:top-8">

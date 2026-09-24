@@ -62,6 +62,30 @@ export const zones: ZoneConfig[] = [
 const v = (position: Vec3, target: Vec3): CameraView => ({ position, target });
 
 export const spots: SpotConfig[] = [
+  // Welcome: the first thing every visitor sees, same pattern as the KleanupCrew office.
+  {
+    id: "welcome",
+    zone: "house",
+    area: "Welcome",
+    service: "",
+    chip: "Welcome",
+    title: "If it’s broken, start here.",
+    problem:
+      "Fixing365 connects you with the right provider for almost anything in a home or property that needs diagnosing, repairing, installing or replacing.",
+    fix: "Tell us what’s broken, add a photo, and we match you with qualified providers so you can compare quotes or book a visit.",
+    related: [
+      "Handyman & installations",
+      "Electrical & lighting",
+      "Plumbing & water",
+      "Heating & air",
+      "Appliance repair",
+      "Interior repairs",
+      "Exterior & structural",
+      "Smart home",
+    ],
+    marker: [0, 0, 0],
+    view: homeView,
+  },
   // Kitchen
   {
     id: "kitchen-pipe",
