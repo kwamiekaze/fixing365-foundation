@@ -24,24 +24,48 @@ const WIDTH = 2.02;
 
 /** Side silhouette in photo pixels (column, row), nose at column 0. */
 const PROFILE: [number, number][] = [
-  [4, 489],
-  [2, 432],
-  [10, 330],
-  [40, 290],
-  [100, 252],
-  [150, 222],
-  [178, 196],
-  [300, 104],
-  [440, 18],
-  [470, 13],
-  [1175, 13],
-  [1196, 22],
-  [1214, 60],
-  [1218, 489],
-  [1206, 490],
+  // Traced just inside the side photo's outline so no body paint ever
+  // shows past the livery, especially around the nose and front bumper.
+  [62, 484],
+  [62, 300],
+  [75, 268],
+  [100, 257],
+  [125, 248],
+  [150, 227],
+  [178, 201],
+  [300, 106],
+  [440, 22],
+  [470, 17],
+  [1172, 17],
+  [1194, 26],
+  [1210, 60],
+  [1212, 460],
+  [1200, 474],
+  [1180, 484],
 ];
 
 const toX = (col: number) => (col - 1245 / 2) * PX;
+
+/**
+ * The nose wraps: the front 60 px of each side photo (headlight and bumper
+ * corner) turns inward on a hinge so the sides meet the front photo at a
+ * chamfered corner instead of two flat sheets crossing at a right angle.
+ */
+const HINGE = 60;
+const NOSE_START = 16; // first column where the photo nose is a clean vertical edge
+const NOSE_L = (HINGE - NOSE_START) * PX;
+const NOSE_ANG = 0.7;
+const NOSE_IN = NOSE_L * Math.sin(NOSE_ANG);
+const NOSE_X = toX(HINGE) - NOSE_L * Math.cos(NOSE_ANG);
+
+/** Plane that shows only the u0..u1 slice of its texture. */
+function slicePlane(w: number, h: number, u0: number, u1: number) {
+  const g = new THREE.PlaneGeometry(w, h);
+  const uv = g.attributes["uv"]!;
+  for (let i = 0; i < uv.count; i++) uv.setX(i, u0 + uv.getX(i) * (u1 - u0));
+  uv.needsUpdate = true;
+  return g;
+}
 const toY = (row: number) => (GROUND_ROW - row) * PX;
 
 function bodyGeometry() {
@@ -144,6 +168,18 @@ function VanBody() {
     };
   }, [side, far, back, front, hood]);
   const body = useMemo(bodyGeometry, []);
+  const geo = useMemo(() => {
+    const u = HINGE / 1245;
+    const frontW = WIDTH - 2 * NOSE_IN + 0.01;
+    const f = frontW / 2.0; // the front photo spans 2.0 m across
+    return {
+      main: slicePlane((1245 - HINGE) * PX, SKIN_H, u, 1),
+      noseNear: slicePlane(NOSE_L, SKIN_H, NOSE_START / 1245, u),
+      mainFar: slicePlane((1245 - HINGE) * PX, SKIN_H, 0, 1 - u),
+      noseFar: slicePlane(NOSE_L, SKIN_H, 1 - u, 1 - NOSE_START / 1245),
+      front: slicePlane(frontW, 0.85, (1 - f) / 2, 1 - (1 - f) / 2),
+    };
+  }, []);
   const z = WIDTH / 2 + 0.004;
   // Windshield runs from the hood line up to the roof on the side profile.
   const ws0 = new THREE.Vector2(toX(178), toY(196));
@@ -172,26 +208,40 @@ function VanBody() {
     <group>
       <mesh geometry={body} material={M.paint} castShadow receiveShadow />
       {/* photo skins: near side, far side, rear doors, front end */}
-      <mesh material={skins.side} position={[0, SKIN_H / 2, z]}>
-        <planeGeometry args={[SKIN_W, SKIN_H]} />
-      </mesh>
-      <mesh material={skins.far} position={[0, SKIN_H / 2, -z]} rotation={[0, Math.PI, 0]}>
-        <planeGeometry args={[SKIN_W, SKIN_H]} />
+      <mesh
+        material={skins.side}
+        geometry={geo.main}
+        position={[toX((HINGE + 1245) / 2), SKIN_H / 2, z]}
+      />
+      <group position={[toX(HINGE), SKIN_H / 2, z]} rotation={[0, -NOSE_ANG, 0]}>
+        <mesh material={skins.side} geometry={geo.noseNear} position={[-NOSE_L / 2, 0, 0]} />
+      </group>
+      <mesh
+        material={skins.far}
+        geometry={geo.mainFar}
+        position={[toX((HINGE + 1245) / 2), SKIN_H / 2, -z]}
+        rotation={[0, Math.PI, 0]}
+      />
+      <group position={[toX(HINGE), SKIN_H / 2, -z]} rotation={[0, Math.PI + NOSE_ANG, 0]}>
+        <mesh material={skins.far} geometry={geo.noseFar} position={[NOSE_L / 2, 0, 0]} />
+      </group>
+      {/* white cap over the chamfered nose, level with the hood front */}
+      <mesh material={M.paint} position={[(NOSE_X + toX(HINGE)) / 2, toY(306), 0]}>
+        <boxGeometry args={[toX(HINGE) - NOSE_X, 0.02, WIDTH - NOSE_IN]} />
       </mesh>
       <mesh
         material={skins.back}
-        position={[toX(1218) + 0.03, 0.27 + 2.31 / 2, 0]}
+        position={[toX(1212) + 0.045, 0.27 + 2.31 / 2, 0]}
         rotation={[0, Math.PI / 2, 0]}
       >
         <planeGeometry args={[2.1, 2.31]} />
       </mesh>
       <mesh
         material={skins.front}
-        position={[toX(2) - 0.03, 0.29 + 0.85 / 2, 0]}
+        geometry={geo.front}
+        position={[NOSE_X - 0.004, 0.29 + 0.85 / 2, 0]}
         rotation={[0, -Math.PI / 2, 0]}
-      >
-        <planeGeometry args={[2.0, 0.85]} />
-      </mesh>
+      />
       <mesh material={skins.hood} quaternion={hoodQ} position={[hoodP.x, hoodP.y, 0]}>
         <planeGeometry args={[1.03, 0.56]} />
       </mesh>
