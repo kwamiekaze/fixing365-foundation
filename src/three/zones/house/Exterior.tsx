@@ -439,35 +439,160 @@ function Fence() {
   );
 }
 
+const acBody = new THREE.MeshStandardMaterial({
+  color: "#c7cbc9",
+  roughness: 0.45,
+  metalness: 0.35,
+});
+const acTrim = new THREE.MeshStandardMaterial({ color: "#7d8387", roughness: 0.5, metalness: 0.5 });
+const acFins = new THREE.MeshStandardMaterial({ color: "#3a3f45", roughness: 0.6, metalness: 0.6 });
+const acShadow = new THREE.MeshStandardMaterial({ color: "#121417", roughness: 1 });
+const warmAir = new THREE.MeshBasicMaterial({
+  color: "#fff4e0",
+  transparent: true,
+  opacity: 0.18,
+  depthWrite: false,
+});
+const leafMat = new THREE.MeshStandardMaterial({ color: "#7a5a2a", roughness: 1 });
+
+/** One louvred side of the outdoor unit: dark coil behind horizontal guard slats. */
+function AcSide({ rot }: { rot: number }) {
+  return (
+    <group rotation={[0, rot, 0]}>
+      <B p={[0, 0.5, 0.436]} s={[0.76, 0.66, 0.01]} m={acFins} cast={false} />
+      {Array.from({ length: 12 }, (_, i) => (
+        <B
+          key={i}
+          p={[0, 0.2 + i * 0.056, 0.452]}
+          s={[0.76, 0.014, 0.022]}
+          m={acBody}
+          cast={false}
+        />
+      ))}
+    </group>
+  );
+}
+
+/**
+ * Outdoor AC condenser in the side yard. Broken: fan stopped, service
+ * panel off and leaning on the unit with a swollen capacitor showing.
+ * Fixed: panel back on, fan spinning, warm air rising off the top.
+ */
 function Condenser() {
   const fixed = useFixed("condenser");
   return (
     <Hotspot id="condenser">
       <group name="obj-ac-condenser" position={[-10.25, 0, -4.2]}>
-        <B p={[0, 0.05, 0]} s={[1.1, 0.1, 1.1]} m={M.floorConcrete} />
-        <B p={[0, 0.5, 0]} s={[0.86, 0.8, 0.86]} m={M.sidingLight} />
-        {[0, 1, 2, 3].map((i) => (
-          <group key={i} rotation={[0, (i * Math.PI) / 2, 0]}>
-            <B p={[0, 0.48, 0.435]} s={[0.76, 0.62, 0.01]} m={M.darkMetal} cast={false} />
-          </group>
+        <B name="obj-ac-pad" p={[0, 0.05, 0]} s={[1.15, 0.1, 1.15]} m={M.floorConcrete} />
+        <B p={[0, 0.12, -0.3]} s={[0.92, 0.04, 0.08]} m={acTrim} />
+        <B p={[0, 0.12, 0.3]} s={[0.92, 0.04, 0.08]} m={acTrim} />
+        {/* cabinet: corner posts, louvred sides, top frame */}
+        {[
+          [-0.44, -0.44],
+          [0.44, -0.44],
+          [-0.44, 0.44],
+          [0.44, 0.44],
+        ].map(([x, z], i) => (
+          <B key={i} p={[x!, 0.52, z!]} s={[0.07, 0.8, 0.07]} m={acTrim} />
         ))}
-        <C p={[0, 0.91, 0]} radius={0.36} h={0.02} m={M.darkMetal} />
-        <Spin speed={fixed ? 14 : 0} position={[0, 0.93, 0]}>
+        {[0, 1, 2, 3].map((i) => (
+          <AcSide key={i} rot={(i * Math.PI) / 2} />
+        ))}
+        <B p={[0, 0.15, 0]} s={[0.9, 0.06, 0.9]} m={acBody} />
+        <B p={[0, 0.915, 0.39]} s={[0.94, 0.035, 0.16]} m={acBody} />
+        <B p={[0, 0.915, -0.39]} s={[0.94, 0.035, 0.16]} m={acBody} />
+        <B p={[0.39, 0.915, 0]} s={[0.16, 0.035, 0.94]} m={acBody} />
+        <B p={[-0.39, 0.915, 0]} s={[0.16, 0.035, 0.94]} m={acBody} />
+        <C p={[0, 0.7, 0]} radius={0.36} h={0.02} m={acShadow} cast={false} />
+        {/* fan shroud, blades and wire guard */}
+        <mesh position={[0, 0.93, 0]} rotation={[Math.PI / 2, 0, 0]} material={acTrim}>
+          <torusGeometry args={[0.35, 0.025, 8, 40]} />
+        </mesh>
+        <Spin speed={fixed ? 16 : 0} position={[0, 0.88, 0]}>
           {[0, 1, 2].map((i) => (
-            <B
-              key={i}
-              r={[0, (i * Math.PI * 2) / 3, 0.25]}
-              p={[0, 0, 0]}
-              s={[0.62, 0.012, 0.12]}
-              m={M.black}
-            />
+            <group key={i} rotation={[0, (i * Math.PI * 2) / 3, 0]}>
+              <B p={[0.17, 0, 0]} r={[0.35, 0, 0]} s={[0.3, 0.01, 0.13]} m={M.black} />
+            </group>
           ))}
+          <C radius={0.06} h={0.08} m={M.darkMetal} />
         </Spin>
-        <C p={[0, 0.94, 0]} radius={0.06} h={0.04} m={M.steel} />
-        <Pipe a={[0.43, 0.3, -0.2]} b={[1.1, 0.3, -0.2]} radius={0.03} m={M.black} />
-        <Pipe a={[0.43, 0.22, -0.3]} b={[1.1, 0.22, -0.3]} radius={0.018} m={M.copper} />
-        <B name="obj-ac-disconnect" p={[1.08, 1.1, 0.3]} s={[0.06, 0.3, 0.22]} m={M.sidingLight} />
-        {!fixed && (
+        {[0.12, 0.22, 0.32].map((r) => (
+          <mesh
+            key={r}
+            position={[0, 0.955, 0]}
+            rotation={[Math.PI / 2, 0, 0]}
+            material={M.darkMetal}
+          >
+            <torusGeometry args={[r, 0.006, 4, 32]} />
+          </mesh>
+        ))}
+        {[0, 1, 2, 3].map((i) => (
+          <B
+            key={i}
+            p={[0, 0.955, 0]}
+            r={[0, (i * Math.PI) / 4, 0]}
+            s={[0.7, 0.01, 0.012]}
+            m={M.darkMetal}
+            cast={false}
+          />
+        ))}
+        <C p={[0, 0.96, 0]} radius={0.05} h={0.03} m={M.steel} />
+        {/* nameplate */}
+        <B p={[-0.2, 0.84, 0.47]} s={[0.26, 0.07, 0.006]} m={M.white} cast={false} />
+        <B p={[-0.2, 0.815, 0.474]} s={[0.26, 0.015, 0.004]} m={M.orange} cast={false} />
+        {/* service corner */}
+        {fixed ? (
+          <B name="obj-ac-service-panel" p={[0.3, 0.55, 0.465]} s={[0.26, 0.5, 0.02]} m={acBody} />
+        ) : (
+          <group name="obj-ac-open-service-bay">
+            <B p={[0.3, 0.55, 0.43]} s={[0.24, 0.46, 0.04]} m={acShadow} cast={false} />
+            <C
+              name="obj-swollen-capacitor"
+              p={[0.26, 0.5, 0.43]}
+              radius={0.045}
+              h={0.16}
+              m={M.steel}
+            />
+            <S p={[0.26, 0.59, 0.43]} radius={0.05} s={[0.05, 0.03, 0.05]} m={M.steel} />
+            <B name="obj-contactor" p={[0.36, 0.62, 0.43]} s={[0.07, 0.09, 0.05]} m={M.black} />
+            <B
+              p={[0.72, 0.28, 0.35]}
+              r={[0, 0.5, -0.3]}
+              s={[0.26, 0.5, 0.02]}
+              m={acBody}
+              name="obj-ac-panel-removed"
+            />
+            {[
+              [-0.1, 0.12],
+              [0.15, -0.2],
+              [-0.25, -0.05],
+            ].map(([x, z], i) => (
+              <S key={i} p={[x!, 0.965, z!]} radius={0.04} s={[0.06, 0.012, 0.035]} m={leafMat} />
+            ))}
+          </group>
+        )}
+        {/* line set into the house, insulated suction line and copper liquid line */}
+        <B p={[0.47, 0.32, -0.25]} s={[0.04, 0.1, 0.12]} m={M.copper} name="obj-service-valves" />
+        <Pipe a={[0.49, 0.34, -0.22]} b={[0.96, 0.34, -0.22]} radius={0.032} m={M.black} />
+        <Pipe a={[0.49, 0.29, -0.3]} b={[0.96, 0.29, -0.3]} radius={0.012} m={M.copper} />
+        <B name="obj-lineset-cover" p={[1.02, 0.78, -0.26]} s={[0.1, 1.0, 0.14]} m={M.white} />
+        <Pipe a={[0.96, 0.34, -0.22]} b={[1.0, 0.34, -0.22]} radius={0.032} m={M.black} />
+        {/* disconnect box and whip */}
+        <B name="obj-ac-disconnect" p={[1.05, 1.15, 0.28]} s={[0.06, 0.32, 0.22]} m={acTrim} />
+        <Pipe a={[1.02, 1.0, 0.28]} b={[0.8, 0.45, 0.3]} radius={0.016} m={M.darkMetal} />
+        <Pipe a={[0.8, 0.45, 0.3]} b={[0.46, 0.45, 0.2]} radius={0.016} m={M.darkMetal} />
+        {fixed ? (
+          <Stream
+            origin={[0, 1.0, 0]}
+            dir={[0, 0.5, 0]}
+            spread={0.45}
+            count={16}
+            size={0.05}
+            life={2.2}
+            gravity={-0.12}
+            material={warmAir}
+          />
+        ) : (
           <Blink period={2}>
             <Label p={[0, 1.35, 0]} size={0.1} color="#ff9340" outline="#1b1208">
               Not running

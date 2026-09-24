@@ -339,7 +339,7 @@ export const spots: SpotConfig[] = [
     fix: "A licensed HVAC tech tests the capacitor, contactor and fan motor and restores cooling.",
     related: ["AC repair", "Heat pumps & mini-splits", "Seasonal tune-ups"],
     marker: [-10.25, 1.9, -4.2],
-    view: v([-6.0, 3.2, 1.2], [-10.2, 0.6, -4.2]),
+    view: v([-10.0, 2.05, 0.4], [-10.25, 0.55, -4.2]),
   },
   {
     id: "ev-charger",
