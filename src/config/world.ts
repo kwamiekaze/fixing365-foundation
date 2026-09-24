@@ -69,7 +69,7 @@ export const spots: SpotConfig[] = [
     area: "Welcome",
     service: "",
     chip: "Welcome",
-    title: "If it’s broken, start here.",
+    title: "Get your fix.",
     problem:
       "Fixing365 connects you with the right provider for almost anything in a home or property that needs diagnosing, repairing, installing or replacing.",
     fix: "Tell us what’s broken, add a photo, and we match you with qualified providers so you can compare quotes or book a visit.",
@@ -439,7 +439,7 @@ const spotStop = (id: string, hold = 3.2): TourStop => {
   };
 };
 export const tour: TourStop[] = [
-  { caption: "If it’s broken, start here.", view: homeView, hold: 3.5 },
+  { caption: "Get your fix.", view: homeView, hold: 3.5 },
   spotStop("kitchen-pipe"),
   spotStop("fridge", 2.6),
   {

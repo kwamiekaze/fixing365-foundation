@@ -1,3 +1,98 @@
-import { Link, useRouterState } from "@tanstack/react-router"; import { Menu, ArrowRight, Camera } from "lucide-react"; import { Brand } from "./Brand"; import { Button } from "./ui/button"; import { Sheet,SheetContent,SheetHeader,SheetTitle,SheetTrigger,SheetClose } from "./ui/sheet";
-const links=[['/services','Services'],['/how-it-works','How It Works'],['/providers','For Providers'],['/about','About'],['/get-help','Get Help']] as const;
-export function Header(){const onRequest=useRouterState({select:(st)=>st.location.pathname})==="/request";return <><header className="sticky top-0 z-50 border-b border-border/70 bg-panel backdrop-blur-xl"><div className="page-shell flex h-16 items-center justify-between"><Link to="/" aria-label="Fixing365 home"><Brand compact/></Link><nav className="hidden items-center gap-6 lg:flex" aria-label="Main navigation">{links.map(([to,label])=><Link key={to} to={to} className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground" activeProps={{className:"text-foreground"}}>{label}</Link>)}</nav><div className="hidden items-center gap-3 md:flex"><Link to="/providers" className="text-sm font-bold text-muted-foreground hover:text-foreground">Become a Provider</Link><Button asChild variant="hero"><Link to="/request"><Camera/>Tell Us What’s Broken <ArrowRight/></Link></Button></div><Sheet><SheetTrigger asChild><Button size="icon" variant="ghost" className="md:hidden" aria-label="Open menu"><Menu/></Button></SheetTrigger><SheetContent className="border-border bg-panel-strong"><SheetHeader><SheetTitle><Brand/></SheetTitle></SheetHeader><nav className="mt-10 grid gap-2">{links.map(([to,label])=><SheetClose key={to} asChild><Link to={to} className="flex min-h-12 items-center border-b border-border py-3 font-display text-xl font-semibold">{label}</Link></SheetClose>)}<SheetClose asChild><Link to="/request" className="mt-6 flex min-h-12 items-center justify-center gap-2 rounded-md bg-primary px-5 font-bold text-primary-foreground"><Camera className="size-5"/>Tell Us What’s Broken</Link></SheetClose></nav></SheetContent></Sheet></div></header>{!onRequest&&<div className="fixed inset-x-4 bottom-4 z-40 md:hidden"><Button asChild variant="hero" size="lg" className="w-full shadow-2xl"><Link to="/request"><Camera/>Tell Us What’s Broken <ArrowRight/></Link></Button></div>}</>}
+import { Link } from "@tanstack/react-router";
+import { ArrowRight, Camera, Menu } from "lucide-react";
+import { Brand } from "./Brand";
+import { Button } from "./ui/button";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
+import { openRequest, overlays, type OverlayId } from "./overlays/store";
+
+/** Every section opens as a see-through pop-up over the 3D scene, never a new page. */
+const links: [OverlayId, string][] = [
+  ["services", "Services"],
+  ["how", "How It Works"],
+  ["providers", "For Providers"],
+  ["about", "About"],
+  ["help", "Get Help"],
+];
+
+export function Header() {
+  return (
+    <>
+      <header className="sticky top-0 z-50 border-b border-border/70 bg-panel backdrop-blur-xl">
+        <div className="page-shell flex h-16 items-center justify-between">
+          <Link to="/" aria-label="Fixing365 home">
+            <Brand compact />
+          </Link>
+          <nav className="hidden items-center gap-6 lg:flex" aria-label="Main navigation">
+            {links.map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => overlays.open(id)}
+                className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
+          <div className="hidden items-center gap-3 md:flex">
+            <button
+              onClick={() => overlays.open("providers")}
+              className="text-sm font-bold text-muted-foreground hover:text-foreground"
+            >
+              Become a Provider
+            </button>
+            <Button variant="hero" onClick={() => openRequest()}>
+              <Camera />
+              Tell Us What’s Broken <ArrowRight />
+            </Button>
+          </div>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button size="icon" variant="ghost" className="md:hidden" aria-label="Open menu">
+                <Menu />
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="border-border bg-panel-strong">
+              <SheetHeader>
+                <SheetTitle>
+                  <Brand />
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="mt-10 grid gap-2">
+                {links.map(([id, label]) => (
+                  <SheetClose key={id} asChild>
+                    <button
+                      onClick={() => overlays.open(id)}
+                      className="flex min-h-12 items-center border-b border-border py-3 text-left font-display text-xl font-semibold"
+                    >
+                      {label}
+                    </button>
+                  </SheetClose>
+                ))}
+                <SheetClose asChild>
+                  <button
+                    onClick={() => openRequest()}
+                    className="mt-6 flex min-h-12 items-center justify-center gap-2 rounded-md bg-primary px-5 font-bold text-primary-foreground"
+                  >
+                    <Camera className="size-5" />
+                    Tell Us What’s Broken
+                  </button>
+                </SheetClose>
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </header>
+      <div className="fixed inset-x-4 bottom-4 z-40 md:hidden">
+        <Button
+          variant="hero"
+          size="lg"
+          className="w-full shadow-2xl"
+          onClick={() => openRequest()}
+        >
+          <Camera />
+          Tell Us What’s Broken <ArrowRight />
+        </Button>
+      </div>
+    </>
+  );
+}

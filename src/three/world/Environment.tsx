@@ -1,5 +1,42 @@
 import { StaticBatch } from "./StaticBatch";
-import { Neighborhood } from "./Neighborhood";
+import { NEIGHBOR_HOMES, Neighborhood } from "./Neighborhood";
+import { Neighbors } from "./Npcs";
+import { GrassField, RealisticTrees, type TreeSpec } from "./Foliage";
+
+const STREET_TREES: TreeSpec[] = [
+  [-14, 4.6, 1],
+  [19, 4.6, 1.1],
+  [-36, 4.6, 1],
+  [37, 4.6, 0.9],
+  [-12, 15, 1.1],
+  [0, 15, 1],
+  [22, 15, 1.2],
+  [-30, 15, 0.9],
+  [30, 15, 1],
+  [-4, -9.5, 1.3],
+  [7, -9.8, 1.1],
+  [-15, -8, 1.2],
+];
+/** Keep grass off the house, drives, paths, street and every neighbor's footprint. */
+const GRASS_AVOID: [number, number, number, number][] = [
+  [-9.5, -6.4, 12.7, 2.35],
+  [5.9, 2, 11.7, 4.4],
+  [-0.7, 2, 2.9, 4.4],
+  [-200, 4.05, 200, 14],
+  [-11, -5, -9.4, -3.4],
+  ...NEIGHBOR_HOMES.flatMap(({ x, z, face }): [number, number, number, number][] => {
+    const f = face ? -1 : 1;
+    return [
+      [x - 6.2, z - 4.4, x + 6.2, z + 4.4],
+      [
+        Math.min(x + 3 * f, x + 5.5 * f),
+        Math.min(z + 3.4 * f, z + 8.5 * f),
+        Math.max(x + 3 * f, x + 5.5 * f),
+        Math.max(z + 3.4 * f, z + 8.5 * f),
+      ],
+    ];
+  }),
+];
 import { Environment as DreiEnv, Lightformer, Sparkles } from "@react-three/drei";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -92,92 +129,6 @@ function Backdrop({ day }: { day: number }) {
     </mesh>
   );
 }
-
-/** Instanced street trees. */
-function Trees() {
-  const trunk = useRef<THREE.InstancedMesh>(null);
-  const crown = useRef<THREE.InstancedMesh>(null);
-  const spots = useMemo<[number, number, number][]>(
-    () => [
-      [-14, 4.6, 1],
-      [19, 4.6, 1.1],
-      [-36, 4.6, 1],
-      [37, 4.6, 0.9],
-      [-12, 15, 1.1],
-      [0, 15, 1],
-      [22, 15, 1.2],
-      [-30, 15, 0.9],
-      [30, 15, 1],
-      [-4, -9.5, 1.3],
-      [7, -9.8, 1.1],
-      [-15, -8, 1.2],
-    ],
-    [],
-  );
-  // Each crown is a cluster of three soft puffs in slightly different greens,
-  // all in one instanced draw call.
-  const puffs = useMemo(() => {
-    const out: { p: THREE.Vector3; s: number; c: THREE.Color }[] = [];
-    const greens = ["#3d7443", "#4f8a4a", "#2f6138", "#5a9450"];
-    spots.forEach(([x, z, k], i) => {
-      const offs: [number, number, number, number][] = [
-        [0, 2.7, 0, 1.25],
-        [0.55, 2.35, 0.35, 0.95],
-        [-0.5, 2.45, -0.3, 1.0],
-        [0.1, 3.35, -0.1, 0.8],
-      ];
-      offs.forEach(([ox, oy, oz, os], j) =>
-        out.push({
-          p: new THREE.Vector3(x + ox * k, oy * k, z + oz * k),
-          s: os * k,
-          c: new THREE.Color(greens[(i + j) % greens.length]),
-        }),
-      );
-    });
-    return out;
-  }, [spots]);
-  useLayoutEffect(() => {
-    const o = new THREE.Object3D();
-    spots.forEach(([x, z, s], i) => {
-      o.position.set(x, 1.0 * s, z);
-      o.scale.set(s, s * 1.1, s);
-      o.updateMatrix();
-      trunk.current!.setMatrixAt(i, o.matrix);
-    });
-    puffs.forEach((pf, i) => {
-      o.position.copy(pf.p);
-      o.scale.setScalar(pf.s);
-      o.updateMatrix();
-      crown.current!.setMatrixAt(i, o.matrix);
-      crown.current!.setColorAt(i, pf.c);
-    });
-    trunk.current!.instanceMatrix.needsUpdate = true;
-    crown.current!.instanceMatrix.needsUpdate = true;
-    if (crown.current!.instanceColor) crown.current!.instanceColor.needsUpdate = true;
-  }, [spots, puffs]);
-  return (
-    <group name="street-trees">
-      <instancedMesh
-        ref={trunk}
-        args={[undefined, undefined, spots.length]}
-        material={M.floorWoodDark}
-        castShadow
-      >
-        <cylinderGeometry args={[0.1, 0.17, 2.0, 8]} />
-      </instancedMesh>
-      <instancedMesh
-        ref={crown}
-        args={[undefined, undefined, puffs.length]}
-        material={foliage}
-        castShadow
-      >
-        <icosahedronGeometry args={[1, 2]} />
-      </instancedMesh>
-    </group>
-  );
-}
-
-const foliage = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.85 });
 
 function StreetLamp({ x, z, on }: { x: number; z: number; on: boolean }) {
   const bulb = useMemo(() => (on ? glow("#ffd9a0", 3) : M.white), [on]);
@@ -374,8 +325,10 @@ export function WorldEnvironment({ shadows }: { shadows: boolean }) {
         />
       </StaticBatch>
       <Backdrop day={day} />
-      <Trees />
+      <RealisticTrees trees={STREET_TREES} />
+      <GrassField area={[-38, -16, 42, 27]} avoid={GRASS_AVOID} />
       <Neighborhood />
+      <Neighbors />
       {night && <pointLight position={[-10, 4, 6]} intensity={8} distance={14} color="#ffcf8a" />}
       <StaticBatch name="street-props" version={night ? 1 : 0}>
         {/* Lamps sit midway between the street trees so no pole ever runs through a crown. */}

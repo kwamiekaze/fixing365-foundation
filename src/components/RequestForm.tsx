@@ -19,9 +19,12 @@ const phoneOk = (v: string) => v.replace(/\D/g, "").length >= 10;
 export function RequestForm({
   initialCategory = "",
   initialProblem = "",
+  bare = false,
 }: {
   initialCategory?: string;
   initialProblem?: string;
+  /** Inside a pop-up: no card of its own, the pop-up is the card. */
+  bare?: boolean;
 }) {
   const service = getService(initialCategory);
   const blank = (): ContactRequest => ({
@@ -110,7 +113,11 @@ export function RequestForm({
     <form
       onSubmit={submit}
       noValidate
-      className="mx-auto grid max-w-2xl gap-5 rounded-lg border border-border bg-panel p-5 md:p-8"
+      className={
+        bare
+          ? "grid gap-5"
+          : "mx-auto grid max-w-2xl gap-5 rounded-lg border border-border bg-panel p-5 md:p-8"
+      }
     >
       {service && <p className="text-sm font-bold text-primary">{service.name}</p>}
       <div className="grid gap-5 md:grid-cols-2">

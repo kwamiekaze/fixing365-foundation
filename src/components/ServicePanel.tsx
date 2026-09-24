@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { openRequest } from "./overlays/store";
 import {
   Camera,
   ClipboardList,
@@ -16,6 +16,7 @@ import { getService } from "@/config/services";
 import { getSpot } from "@/config/world";
 import { useWorld, world } from "@/three/world/store";
 import { Button } from "./ui/button";
+import { SLOGAN } from "@/config/brand";
 import { AllServicesDrawer } from "./AllServicesDrawer";
 import { services } from "@/config/services";
 
@@ -65,10 +66,10 @@ export function TellUsLink({
   ...rest
 }: { label?: string } & Record<string, unknown>) {
   return (
-    <Link to="/request" {...rest}>
+    <button type="button" onClick={() => openRequest()} {...rest}>
       <Camera />
       {label}
-    </Link>
+    </button>
   );
 }
 
@@ -90,7 +91,7 @@ function WelcomeCard({ full }: { full: boolean }) {
         </button>
         <p className="pr-10 text-xs font-bold text-primary">Welcome to Fixing365</p>
         <h1 className="mt-1 pr-10 font-display text-2xl font-bold leading-tight md:text-3xl">
-          If it’s broken, start here.
+          {SLOGAN}
         </h1>
         <p className="mt-2 text-sm leading-6 text-foreground/80">
           Tap anything broken in the house, or snap a photo and tell us what’s wrong.
@@ -196,15 +197,9 @@ export function ServicePanel() {
   if (spot.id === "welcome") return <WelcomeCard full={card === "full"} />;
   const service = getService(spot.service);
   const request = (
-    <Link
-      to="/request"
-      search={{
-        category: spot.service || undefined,
-        problem: spot.service ? spot.title : undefined,
-      }}
-    >
+    <button type="button" onClick={() => openRequest(spot.service, spot.service ? spot.title : "")}>
       {spot.service ? "Request this fix" : "Describe your problem"} <ArrowRight />
-    </Link>
+    </button>
   );
 
   if (card === "compact")

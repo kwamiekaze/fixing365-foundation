@@ -1,7 +1,7 @@
-import { useMemo } from "react";
 import * as THREE from "three";
-import { B, C, S } from "./kit";
+import { B, S } from "./kit";
 import { StaticBatch } from "./StaticBatch";
+import { RealisticTrees, type TreeSpec } from "./Foliage";
 
 /**
  * The street around the repair house: tidy suburban homes in the soft green
@@ -28,9 +28,7 @@ const WINDOW = mat("#cfe3ea", 0.2, {
 });
 const STEP = mat("#b9bcbf", 0.95);
 const DRIVE = mat("#c9ccce", 0.95);
-const CROWN = mat("#6fa860", 0.9);
 const CROWN_DARK = mat("#5c9450", 0.9);
-const TRUNK = mat("#6d7c55", 0.9);
 const PICKET = mat("#f4f6f0", 0.6);
 
 const roofCache = new Map<string, THREE.ExtrudeGeometry>();
@@ -52,7 +50,7 @@ function roofGeometry(depth: number, rise: number, width: number) {
   return g;
 }
 
-interface HouseSpec {
+export interface HouseSpec {
   x: number;
   z: number;
   /** 0 faces the street to the south (+z), 1 faces north (-z). */
@@ -119,12 +117,6 @@ function House({ x, z, face, seed }: HouseSpec) {
       {/* side windows */}
       <B p={[w / 2 + 0.02, 1.65, 0]} s={[0.04, 1, 1.2]} m={WINDOW} cast={false} />
       <B p={[-w / 2 - 0.02, 1.65, 0.6]} s={[0.04, 1, 1.2]} m={WINDOW} cast={false} />
-      {/* yard tree */}
-      <group position={[-w / 2 - 1.6, 0, dz + 2.4 + (seed % 2)]}>
-        <C p={[0, 1.1, 0]} radius={0.16} top={0.12} h={2.2} m={TRUNK} seg={8} />
-        <S p={[0, 2.9, 0]} radius={1.35} s={[1.35, 1.25, 1.35]} m={seed % 2 ? CROWN : CROWN_DARK} />
-        <S p={[0.5, 3.6, 0.2]} radius={0.9} s={[0.9, 0.85, 0.9]} m={CROWN} />
-      </group>
       {/* shrubs under the windows */}
       {[-w / 2 + 1.1, -w / 2 + 2.0, 1.1, 1.9].map((sx) => (
         <S key={sx} p={[sx, 0.35, dz + 0.55]} radius={0.42} s={[0.45, 0.38, 0.4]} m={CROWN_DARK} />
@@ -150,40 +142,52 @@ function House({ x, z, face, seed }: HouseSpec) {
   );
 }
 
+export const NEIGHBOR_HOMES: HouseSpec[] = [
+  // Same side of the street as the repair house (front near z = 2).
+  { x: -27, z: -2.4, face: 0, seed: 1 },
+  { x: 29, z: -2.4, face: 0, seed: 2 },
+  { x: -46, z: -2.4, face: 0, seed: 3 },
+  { x: 48, z: -2.4, face: 0, seed: 4 },
+  { x: -65, z: -2.4, face: 0, seed: 5 },
+  { x: 67, z: -2.4, face: 0, seed: 6 },
+  // Across the street, facing north toward the house.
+  { x: -38, z: 21, face: 1, seed: 7 },
+  { x: -19, z: 21, face: 1, seed: 8 },
+  { x: 0, z: 21, face: 1, seed: 9 },
+  { x: 19, z: 21, face: 1, seed: 10 },
+  { x: 38, z: 21, face: 1, seed: 11 },
+  { x: 57, z: 21, face: 1, seed: 12 },
+  { x: -57, z: 21, face: 1, seed: 13 },
+  // Back row behind the fence line, facing the next street over.
+  { x: -18, z: -21, face: 1, seed: 14 },
+  { x: 2, z: -21, face: 1, seed: 15 },
+  { x: 22, z: -21, face: 1, seed: 16 },
+  { x: -38, z: -21, face: 1, seed: 17 },
+  { x: 42, z: -21, face: 1, seed: 18 },
+];
+
+/** Yard tree for each home, in world space, matching the house's facing. */
+const yardTrees: TreeSpec[] = NEIGHBOR_HOMES.map(({ x, z, face, seed }) => {
+  const w = 8.5 + (seed % 3) * 1.1;
+  const d = 7 + (seed % 2) * 0.8;
+  const lx = -w / 2 - 1.6;
+  const lz = d / 2 + 2.2 + (seed % 2) * 0.5;
+  const f = face ? -1 : 1;
+  return [x + lx * f, z + lz * f, 1 + (seed % 3) * 0.15];
+});
+
 export function Neighborhood() {
-  const homes = useMemo<HouseSpec[]>(
-    () => [
-      // Same side of the street as the repair house (front near z = 2).
-      { x: -27, z: -2.4, face: 0, seed: 1 },
-      { x: 29, z: -2.4, face: 0, seed: 2 },
-      { x: -46, z: -2.4, face: 0, seed: 3 },
-      { x: 48, z: -2.4, face: 0, seed: 4 },
-      { x: -65, z: -2.4, face: 0, seed: 5 },
-      { x: 67, z: -2.4, face: 0, seed: 6 },
-      // Across the street, facing north toward the house.
-      { x: -38, z: 21, face: 1, seed: 7 },
-      { x: -19, z: 21, face: 1, seed: 8 },
-      { x: 0, z: 21, face: 1, seed: 9 },
-      { x: 19, z: 21, face: 1, seed: 10 },
-      { x: 38, z: 21, face: 1, seed: 11 },
-      { x: 57, z: 21, face: 1, seed: 12 },
-      { x: -57, z: 21, face: 1, seed: 13 },
-      // Back row behind the fence line, facing the next street over.
-      { x: -18, z: -21, face: 1, seed: 14 },
-      { x: 2, z: -21, face: 1, seed: 15 },
-      { x: 22, z: -21, face: 1, seed: 16 },
-      { x: -38, z: -21, face: 1, seed: 17 },
-      { x: 42, z: -21, face: 1, seed: 18 },
-    ],
-    [],
-  );
+  const homes = NEIGHBOR_HOMES;
   return (
-    <StaticBatch name="neighborhood">
-      <group name="neighborhood-houses">
-        {homes.map((h) => (
-          <House key={`${h.x}-${h.z}`} {...h} />
-        ))}
-      </group>
-    </StaticBatch>
+    <>
+      <RealisticTrees trees={yardTrees} seed={7} />
+      <StaticBatch name="neighborhood">
+        <group name="neighborhood-houses">
+          {homes.map((h) => (
+            <House key={`${h.x}-${h.z}`} {...h} />
+          ))}
+        </group>
+      </StaticBatch>
+    </>
   );
 }

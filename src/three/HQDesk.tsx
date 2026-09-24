@@ -179,7 +179,7 @@ export function HQDesk({
         FIXING365
       </Text>
       <Text font={FONT_URL} position={[0, 2.9, -1.24]} fontSize={0.14} color="#f5f1e8">
-        IF IT’S BROKEN, START HERE.
+        GET YOUR FIX.
       </Text>
       <RoundedBox name="obj-hq-desk" args={[3.8, 0.18, 1.35]} position={[0, 0.9, 0]} radius={0.08}>
         <meshStandardMaterial color="#7d573d" roughness={0.5} />

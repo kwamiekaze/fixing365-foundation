@@ -45,7 +45,7 @@ function TvPanel({ on }: { on: boolean }) {
             FIXING365
           </Label>
           <Label p={[0, -0.09, 0.022]} size={0.045} color="#e9eef5">
-            If it’s broken, start here.
+            Get your fix.
           </Label>
         </>
       )}
