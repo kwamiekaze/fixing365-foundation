@@ -11,12 +11,12 @@ import type { Plugin } from "vite";
  * Dev only: TanStack devtools tags every JSX element with data-tsd-source.
  * React Three Fiber treats that as a Three.js property path and throws when
  * an element updates (for example when Show the Fix swaps a part), so strip
- * it from 3D scene files. Production builds never contain it.
+ * it from 3D scene files in every mode.
  */
 function stripSourceTagsFrom3d(): Plugin {
   return {
     name: "fixing365-strip-tsd-source-3d",
-    apply: "serve",
+    // Runs in dev AND builds: preview builds (build:dev) also carry the devtools tags.
     enforce: "post",
     transform(code, id) {
       if (!/\/src\/three\//.test(id) || !code.includes("data-tsd-source")) return null;
