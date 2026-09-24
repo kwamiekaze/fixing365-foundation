@@ -10,7 +10,6 @@ const STREET_TREES: TreeSpec[] = [
   [-36, 4.6, 1],
   [37, 4.6, 0.9],
   [-12, 15, 1.1],
-  [0, 15, 1],
   [22, 15, 1.2],
   [-30, 15, 0.9],
   [30, 15, 1],
@@ -28,7 +27,7 @@ const GRASS_AVOID: [number, number, number, number][] = [
   ...NEIGHBOR_HOMES.flatMap(({ x, z, face }): [number, number, number, number][] => {
     const f = face ? -1 : 1;
     return [
-      [x - 6.2, z - 4.4, x + 6.2, z + 4.4],
+      [x - 7.8, z - 4.4, x + 7.8, z + 4.4],
       [
         Math.min(x + 3 * f, x + 5.5 * f),
         Math.min(z + 3.4 * f, z + 8.5 * f),
@@ -297,7 +296,7 @@ export function WorldEnvironment({ shadows }: { shadows: boolean }) {
       <GrassField area={[-38, -16, 42, 27]} avoid={GRASS_AVOID} />
       <Neighborhood />
       <Neighbors />
-      <ServiceVanDetailed position={[-1.5, 0, 10.85]} rotation={Math.PI} />
+      <ServiceVanDetailed position={[5.2, 0, 10.85]} rotation={Math.PI} />
       {night && <pointLight position={[-10, 4, 6]} intensity={8} distance={14} color="#ffcf8a" />}
       <StaticBatch name="street-props" version={night ? 1 : 0}>
         {/* Lamps sit midway between the street trees so no pole ever runs through a crown. */}

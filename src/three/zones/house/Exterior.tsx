@@ -216,14 +216,6 @@ function GarageDoor() {
         m={M.floorConcrete}
         cast={false}
       />
-      <B
-        name="obj-driveway-crack"
-        p={[8.2, 0.065, 3.1]}
-        r={[0, 0.5, 0]}
-        s={[1.4, 0.005, 0.03]}
-        m={M.black}
-        cast={false}
-      />
     </Hotspot>
   );
 }
