@@ -150,7 +150,7 @@ export const spots: SpotConfig[] = [
       "Electrical troubleshooting",
     ],
     marker: [-1, 3.8, -2.8],
-    view: v([1.4, 2.0, 2.2], [-1, 2.8, -2.8]),
+    view: v([-3.2, 2.2, 1.4], [-1, 2.8, -2.8]),
   },
   {
     id: "drywall-hole",

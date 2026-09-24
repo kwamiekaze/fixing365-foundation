@@ -22,11 +22,10 @@ const HqDetail = lazy(() => import("./zones/hq/HqDetail"));
 const BlockDetail = lazy(() => import("./zones/block/BlockDetail"));
 
 interface Props {
-  canRotate: boolean;
   onZoneDetail?: (zone: ZoneId, loaded: boolean) => void;
 }
 
-export default function Scene({ canRotate, onZoneDetail }: Props) {
+export default function Scene({ onZoneDetail }: Props) {
   const mobile = typeof window !== "undefined" && window.innerWidth < 768;
   // ?lite forces the low tier (no shadows, 1x resolution). Also what weak devices fall back to.
   const lite =
@@ -58,7 +57,7 @@ export default function Scene({ canRotate, onZoneDetail }: Props) {
       <ZoneSlot id="house" low={<HouseLow />} Detail={HouseDetail} onDetail={onZoneDetail} />
       <ZoneSlot id="hq" low={<HqLow />} Detail={HqDetail} onDetail={onZoneDetail} />
       <ZoneSlot id="block" low={<BlockLow />} Detail={BlockDetail} onDetail={onZoneDetail} />
-      <CameraRig canRotate={canRotate} />
+      <CameraRig />
       <DebugInfo />
     </Canvas>
   );

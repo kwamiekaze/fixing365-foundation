@@ -164,8 +164,8 @@ function GarageBody() {
   const coach = useMemo(() => glow("#ffd9a0", 2), []);
   return (
     <group name="garage-body">
-      <B p={[GCX, 1.5, -6]} s={[GW, 3, 0.16]} m={M.siding} />
-      <B p={[GX2, 1.5, -2]} s={[0.16, 3, 8]} m={M.siding} />
+      <B p={[GCX, 1.49, -6]} s={[GW - 0.2, 2.98, 0.16]} m={M.siding} />
+      <B p={[GX2, 1.505, -2]} s={[0.16, 3.01, 8.1]} m={M.siding} />
       <B p={[GX1 + 0.27, 1.5, 2]} s={[0.55, 3, 0.16]} m={M.sidingLight} />
       <B p={[GX2 - 0.27, 1.5, 2]} s={[0.55, 3, 0.16]} m={M.sidingLight} />
       <B p={[GCX, 2.7, 2]} s={[GW, 0.6, 0.16]} m={M.sidingLight} />

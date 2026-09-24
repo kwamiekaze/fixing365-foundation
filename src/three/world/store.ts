@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { useSyncExternalStore } from "react";
 import { getSpot, type ZoneId } from "@/config/world";
 
@@ -104,4 +105,20 @@ export const useReduced = () => useWorld((s) => s.reduced);
 // With ?debug, expose the store for automated visual checks.
 if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug")) {
   (window as unknown as { __world: typeof world }).__world = world;
+  queueMicrotask(
+    () => ((window as unknown as { __rig: unknown }).__rig = { rigInput, rigState, dist: 0 }),
+  );
+}
+
+/**
+ * Live gesture input, KleanupCrew style: drag orbits a full 360, vertical
+ * drag tilts, pinch or wheel zooms. Mutable on purpose, read every frame.
+ */
+export const rigInput = { dragX: 0, dragY: 0, zoom: 0, dragging: false, lastInput: 0 };
+/** What the camera is looking at right now. Streaming reads this. */
+export const rigState = { target: new THREE.Vector3(1, 0.3, -1.8), cutaway: false };
+export function resetRigInput() {
+  rigInput.dragX = 0;
+  rigInput.dragY = 0;
+  rigInput.zoom = 0;
 }

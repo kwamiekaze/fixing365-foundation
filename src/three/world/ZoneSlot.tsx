@@ -1,4 +1,4 @@
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import {
   Suspense,
   useEffect,
@@ -10,7 +10,7 @@ import {
 } from "react";
 import * as THREE from "three";
 import { getZone, type ZoneId } from "@/config/world";
-import { useWorld } from "./store";
+import { rigState, useWorld } from "./store";
 
 const target = new THREE.Vector3();
 const center = new THREE.Vector3();
@@ -38,14 +38,12 @@ export function ZoneSlot({
   const [near, setNear] = useState(active);
   const [ready, setReady] = useState(false);
   const acc = useRef(0);
-  const controls = useThree((s) => s.controls) as unknown as { target?: THREE.Vector3 } | null;
 
   useFrame((_, dt) => {
     acc.current += dt;
     if (acc.current < 0.25) return;
     acc.current = 0;
-    if (!controls?.target) return;
-    target.copy(controls.target);
+    target.copy(rigState.target);
     center.set(...zone.center);
     const d = target.distanceTo(center);
     const next = near ? d < zone.loadRadius * 1.35 : d < zone.loadRadius;

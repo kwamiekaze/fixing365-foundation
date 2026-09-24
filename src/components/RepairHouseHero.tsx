@@ -1,6 +1,7 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useSceneGestures } from "./useSceneGestures";
 import { Link } from "@tanstack/react-router";
-import { ArrowDown, Move3d, RotateCcw, Rows3, ScanEye, ScanSearch } from "lucide-react";
+import { ArrowDown, RotateCcw, Rows3, ScanEye, ScanSearch } from "lucide-react";
 import { Button } from "./ui/button";
 import { LoadingScreen } from "./LoadingScreen";
 import { Fallback2D } from "./Fallback2D";
@@ -14,9 +15,9 @@ const Scene = lazy(() => import("@/three/Scene"));
 
 export function RepairHouseHero() {
   const [simple, setSimple] = useState(false);
-  const [mobileExplore, setMobileExplore] = useState(false);
+  const stage = useRef<HTMLDivElement>(null);
+  useSceneGestures(stage);
   const [webgl, setWebgl] = useState(true);
-  const [desktop, setDesktop] = useState(true);
   const [loaded, setLoaded] = useState<Record<string, boolean>>({});
   const zone = useWorld((s) => s.zone);
   const spot = useWorld((s) => s.spot);
@@ -29,7 +30,6 @@ export function RepairHouseHero() {
 
   useEffect(() => {
     setWebgl(supportsWebGL());
-    setDesktop(window.innerWidth >= 768);
     world.set({ reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches });
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") world.back();
@@ -52,12 +52,15 @@ export function RepairHouseHero() {
       className="relative h-[calc(100svh-4rem)] min-h-[36rem] max-h-[75rem] overflow-hidden border-b border-border md:h-[calc(100vh-4rem)]"
       aria-label="Interactive Fixing365 neighborhood"
     >
-      <div className="absolute inset-0">
+      <div
+        ref={stage}
+        className={`absolute inset-0 ${useSimple ? "" : "cursor-grab touch-none select-none active:cursor-grabbing"}`}
+      >
         {useSimple ? (
           <Fallback2D />
         ) : (
           <Suspense fallback={<LoadingScreen />}>
-            <Scene canRotate={desktop || mobileExplore} onZoneDetail={onZoneDetail} />
+            <Scene onZoneDetail={onZoneDetail} />
           </Suspense>
         )}
       </div>
@@ -116,16 +119,6 @@ export function RepairHouseHero() {
           <Rows3 />
           <span className="max-md:sr-only">{useSimple ? "3D view" : "Simple view"}</span>
         </Button>
-        {!useSimple && !desktop && (
-          <Button
-            variant={mobileExplore ? "hero" : "inverse"}
-            size="sm"
-            onClick={() => setMobileExplore((v) => !v)}
-          >
-            <Move3d />
-            <span className="max-md:sr-only">{mobileExplore ? "Done" : "Rotate"}</span>
-          </Button>
-        )}
       </div>
 
       {streaming && (

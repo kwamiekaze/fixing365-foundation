@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import type { ReactNode } from "react";
 import type { Vec3 } from "@/config/world";
-import { world } from "./store";
+import { rigState, world } from "./store";
 
 /**
  * Shared material library. Reusing one material per surface keeps shader
@@ -93,7 +93,7 @@ export const glow = (color: string, intensity = 2) =>
 /** Fades wall materials when X-Ray mode toggles. */
 export function XrayFader() {
   useFrame((_, dt) => {
-    const target = world.get().xray ? 0.1 : 1;
+    const target = world.get().xray ? 0.1 : rigState.cutaway ? 0.22 : 1;
     const k = world.get().reduced ? 1 : 1 - Math.exp(-6 * Math.min(dt, 0.05));
     for (const m of xrayMaterials) {
       m.opacity += (target - m.opacity) * k;

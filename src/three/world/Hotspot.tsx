@@ -12,6 +12,7 @@ const barGeo = new THREE.PlaneGeometry(0.05, 0.14);
 const dotGeo = new THREE.CircleGeometry(0.032, 16);
 const hitGeo = new THREE.SphereGeometry(0.5, 8, 6);
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+const tmp = new THREE.Vector3();
 const white = new THREE.MeshBasicMaterial({ color: "#ffffff", toneMapped: false });
 
 /**
@@ -51,7 +52,13 @@ export function Hotspot({
   );
   const discMat = useRef(new THREE.MeshBasicMaterial({ color: "#ff7a1a", toneMapped: false }));
 
-  useFrame(({ clock }) => {
+  const holder = useRef<THREE.Group>(null);
+  useFrame(({ clock, camera }) => {
+    // Keep markers a steady size on screen: small when zoomed in close.
+    if (holder.current && spot) {
+      const d = camera.position.distanceTo(holder.current.getWorldPosition(tmp));
+      holder.current.scale.setScalar(Math.min(1.25, Math.max(0.28, d / 7)));
+    }
     const color = fixed ? "#3ddc84" : "#ff7a1a";
     discMat.current.color.set(color);
     ringMat.current.color.set(color);
@@ -67,6 +74,8 @@ export function Hotspot({
   if (!spot) return <>{children}</>;
   const choose = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+    // A drag that happens to end on an object is a camera move, not a tap.
+    if (e.delta > 8) return;
     world.selectSpot(id);
   };
   const over = (e: ThreeEvent<PointerEvent>) => {
@@ -91,7 +100,7 @@ export function Hotspot({
         )}
       </group>
       {visible && (
-        <Billboard position={spot.marker} name={`marker-${id}`}>
+        <Billboard position={spot.marker} name={`marker-${id}`} ref={holder}>
           <group onClick={choose} onPointerOver={over} onPointerOut={out}>
             <mesh geometry={hitGeo} material={hitMat} />
             <mesh ref={ring} geometry={ringGeo} material={ringMat.current} renderOrder={10} />

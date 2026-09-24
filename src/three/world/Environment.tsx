@@ -281,7 +281,8 @@ export function WorldEnvironment({ shadows }: { shadows: boolean }) {
         color={sunColor}
         castShadow={shadows}
         shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0004}
+        shadow-bias={-0.0003}
+        shadow-normalBias={0.035}
         shadow-camera-left={-16}
         shadow-camera-right={16}
         shadow-camera-top={12}

@@ -1,15 +1,14 @@
-import { OrbitControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { getSpot, getZone, homeView, tour, type CameraView } from "@/config/world";
-import { useWorld, world } from "./store";
+import { resetRigInput, rigInput, rigState, useWorld, world } from "./store";
 
 /** Seconds without a tap, scroll or key before the cinematic tour starts. */
-const IDLE_TOUR_S = 10;
-/** Seconds after the last drag before the held shot starts breathing again. */
-const RESUME_DRIFT_S = 3;
+const IDLE_TOUR_S =
+  typeof window !== "undefined" && new URLSearchParams(window.location.search).has("notour")
+    ? Infinity
+    : 25;
 
 /** Eases in and out with no kick at either end. */
 function smootherstep(x: number) {
@@ -72,16 +71,21 @@ function makeLeg(
   };
 }
 
+/** House footprint, used to cut away walls between the camera and a subject inside. */
+const HOUSE = { x1: -9.3, x2: 6.2, z1: -6.2, z2: 2.2, top: 3.3 };
+const inside = (v: THREE.Vector3, m = 0): boolean =>
+  v.x > HOUSE.x1 - m && v.x < HOUSE.x2 + m && v.z > HOUSE.z1 - m && v.z < HOUSE.z2 + m;
+
 /**
  * Every camera move in the scene runs through here.
  * fly: a timed crane move to a new framing.
  * hold: the framing breathes, a slow arc and sway so a still shot stays alive.
- * free: the visitor is dragging; we stay out of the way.
  * tour: after a quiet spell, the camera walks the whole neighborhood.
- * Closing a card never moves the camera; only choosing a new view does.
+ * On top of fly and hold, the visitor's gestures apply exactly as on the
+ * KleanupCrew office: drag orbits a full 360, vertical drag tilts, pinch or
+ * wheel zooms in close. Closing a card never moves the camera.
  */
-export function CameraRig({ canRotate }: { canRotate: boolean }) {
-  const controls = useRef<OrbitControlsImpl>(null);
+export function CameraRig() {
   const { camera, size } = useThree();
   const spotId = useWorld((s) => s.spot);
   const zoneId = useWorld((s) => s.zone);
@@ -99,44 +103,25 @@ export function CameraRig({ canRotate }: { canRotate: boolean }) {
   );
 
   const st = useRef({
-    mode: "fly" as Mode,
+    mode: "hold" as Mode,
     leg: null as Leg | null,
-    anchorP: new THREE.Vector3(),
-    anchorT: new THREE.Vector3(),
+    anchorP: new THREE.Vector3().fromArray(homeView.position),
+    anchorT: new THREE.Vector3().fromArray(homeView.target),
     holdStart: 0,
     holdScale: 1,
-    lastInput: 0,
-    dragging: false,
     tourIndex: 0,
     tourPhase: "enter" as "enter" | "hold" | "travel",
     tourPhaseStart: 0,
     tourLeg: null as Leg | null,
+    look: new THREE.Vector3().fromArray(homeView.target),
+    baseP: new THREE.Vector3().fromArray(homeView.position),
+    baseT: new THREE.Vector3().fromArray(homeView.target),
   });
-  const tmpP = useRef(new THREE.Vector3());
-  const tmpT = useRef(new THREE.Vector3());
-  const off = useRef(new THREE.Vector3());
-
+  const P = useRef(new THREE.Vector3()).current;
+  const T = useRef(new THREE.Vector3()).current;
+  const off = useRef(new THREE.Vector3()).current;
+  const desired = useRef(new THREE.Vector3()).current;
   const now = () => performance.now() / 1000;
-
-  const setLimits = (mode: Mode) => {
-    const c = controls.current;
-    if (!c) return;
-    if (mode === "hold" || mode === "free") {
-      const o = off.current.copy(st.current.anchorP).sub(st.current.anchorT);
-      const az = Math.atan2(o.x, o.z);
-      const d = o.length();
-      const spread = world.get().spot ? 0.5 : 0.65;
-      c.minAzimuthAngle = az - spread;
-      c.maxAzimuthAngle = az + spread;
-      c.minDistance = d * 0.88;
-      c.maxDistance = d * 1.12;
-    } else {
-      c.minAzimuthAngle = -Infinity;
-      c.maxAzimuthAngle = Infinity;
-      c.minDistance = 0.1;
-      c.maxDistance = 400;
-    }
-  };
 
   const enterHold = (p: THREE.Vector3, t: THREE.Vector3) => {
     const s = st.current;
@@ -145,29 +130,19 @@ export function CameraRig({ canRotate }: { canRotate: boolean }) {
     s.holdStart = now();
     s.holdScale = Math.min(1, s.anchorP.distanceTo(s.anchorT) / 12);
     s.mode = "hold";
-    setLimits("hold");
   };
 
-  const flyTo = (p: THREE.Vector3, t: THREE.Vector3) => {
-    const c = controls.current;
-    if (!c) return;
-    const s = st.current;
-    if (world.get().reduced) {
-      camera.position.copy(p);
-      c.target.copy(t);
-      c.update();
-      enterHold(p, t);
-      return;
-    }
-    s.leg = makeLeg(camera.position, c.target, p, t, now());
-    s.mode = "fly";
-    setLimits("fly");
-  };
-
-  // A new view (spot, zone or back to the house) is the only thing that moves the camera.
+  // A new view (spot, zone or Back) is the only thing that moves the camera.
   useEffect(() => {
     if (world.get().touring) return;
-    flyTo(view.position, view.target);
+    const s = st.current;
+    resetRigInput();
+    if (world.get().reduced) {
+      enterHold(view.position, view.target);
+      return;
+    }
+    s.leg = makeLeg(s.baseP, s.baseT, view.position, view.target, now());
+    s.mode = "fly";
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
@@ -175,43 +150,25 @@ export function CameraRig({ canRotate }: { canRotate: boolean }) {
     const s = st.current;
     if (s.mode !== "tour") return;
     world.set({ touring: false, tourCaption: null, explored: true });
-    const c = controls.current;
-    if (c) enterHold(camera.position.clone(), c.target.clone());
+    resetRigInput();
+    enterHold(camera.position.clone(), s.look.clone());
   };
 
-  // Any tap, scroll, key or drag counts as the visitor being present.
+  // Any tap, scroll or key counts as the visitor being present.
   useEffect(() => {
-    st.current.lastInput = now();
+    rigInput.lastInput = now();
     const mark = () => {
-      st.current.lastInput = now();
+      rigInput.lastInput = now();
       stopTour();
     };
     const opts = { passive: true } as const;
     window.addEventListener("pointerdown", mark, opts);
     window.addEventListener("wheel", mark, opts);
     window.addEventListener("keydown", mark);
-    window.addEventListener("touchstart", mark, opts);
-    const c = controls.current;
-    const start = () => {
-      const s = st.current;
-      s.dragging = true;
-      s.lastInput = now();
-      if (s.mode === "fly" || s.mode === "hold") s.mode = "free";
-      world.set({ explored: true });
-    };
-    const end = () => {
-      st.current.dragging = false;
-      st.current.lastInput = now();
-    };
-    c?.addEventListener("start", start);
-    c?.addEventListener("end", end);
     return () => {
       window.removeEventListener("pointerdown", mark);
       window.removeEventListener("wheel", mark);
       window.removeEventListener("keydown", mark);
-      window.removeEventListener("touchstart", mark);
-      c?.removeEventListener("start", start);
-      c?.removeEventListener("end", end);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -221,18 +178,12 @@ export function CameraRig({ canRotate }: { canRotate: boolean }) {
     const w = world.get();
     world.set({ touring: true, xray: false, card: w.card === "full" ? "compact" : w.card });
     if (w.spot) world.set({ spot: null });
+    resetRigInput();
     s.mode = "tour";
     s.tourIndex = 0;
     s.tourPhase = "enter";
     const first = stops[0]!;
-    s.tourLeg = makeLeg(
-      camera.position,
-      controls.current!.target,
-      first.framed.position,
-      first.framed.target,
-      t,
-    );
-    setLimits("tour");
+    s.tourLeg = makeLeg(camera.position, s.look, first.framed.position, first.framed.target, t);
   };
 
   // Projection shift keeps the subject clear of the headline and the cards.
@@ -261,61 +212,43 @@ export function CameraRig({ canRotate }: { canRotate: boolean }) {
     else cam.setViewOffset(size.width, size.height, s.x, s.y, size.width, size.height);
   });
 
-  useFrame(() => {
-    const c = controls.current;
-    if (!c) return;
+  useFrame((_, rawDt) => {
     const s = st.current;
     const t = now();
+    const dt = Math.min(rawDt, 0.05);
     const w = world.get();
-    const P = tmpP.current;
-    const T = tmpT.current;
-
-    if (w.reduced) {
-      c.update();
-      return;
-    }
+    const i = rigInput;
 
     // Quiet for a while, nothing open to read, hero on screen: roll the tour.
-    const idle = t - s.lastInput > IDLE_TOUR_S;
+    const idle = t - i.lastInput > IDLE_TOUR_S;
     const reading = w.spot !== null && w.card !== "hidden";
-    const heroVisible = typeof window === "undefined" || window.scrollY < window.innerHeight * 0.6;
-    if (s.mode !== "tour" && s.mode !== "fly" && idle && !reading && !s.dragging && heroVisible)
+    const heroVisible = window.scrollY < window.innerHeight * 0.6;
+    if (
+      !w.reduced &&
+      s.mode !== "tour" &&
+      s.mode !== "fly" &&
+      idle &&
+      !reading &&
+      !i.dragging &&
+      heroVisible
+    )
       startTour(t);
 
+    // 1. Where the shot wants to be before the visitor's gestures.
     if (s.mode === "fly" && s.leg) {
       const k = sampleLeg(s.leg, t, P, T);
-      camera.position.copy(P);
-      c.target.copy(T);
       if (k >= 1) enterHold(s.leg.toP, s.leg.toT);
-    } else if (s.mode === "hold") {
-      // A held frame still breathes: a slow arc around the subject and a
-      // sway on two periods that never line up, like a hand holding the shot.
-      const e = t - s.holdStart;
-      const ramp = smootherstep(e / 2.5);
-      const yaw = Math.sin((e * Math.PI * 2) / 22) * (w.spot ? 0.07 : 0.16) * ramp;
-      off.current.copy(s.anchorP).sub(s.anchorT).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
-      P.copy(s.anchorT).add(off.current);
-      P.x += Math.sin(e * 0.35) * 0.05 * s.holdScale * ramp;
-      P.y += Math.sin(e * 0.2555 + 1.4) * 0.04 * s.holdScale * ramp;
-      camera.position.copy(P);
-      c.target.copy(s.anchorT);
-    } else if (s.mode === "free") {
-      if (!s.dragging && t - s.lastInput > RESUME_DRIFT_S)
-        enterHold(camera.position.clone(), c.target.clone());
     } else if (s.mode === "tour") {
       const stop = stops[s.tourIndex]!;
-      if (s.tourPhase === "enter" || s.tourPhase === "travel") {
-        const k = sampleLeg(s.tourLeg!, t, P, T);
-        if (k >= 1) {
+      if (s.tourPhase !== "hold") {
+        if (sampleLeg(s.tourLeg!, t, P, T) >= 1) {
           s.tourPhase = "hold";
           s.tourPhaseStart = t;
           world.set({ tourCaption: stop.caption });
         }
       } else {
-        // Slow push-in while holding, then crane on to the next stop.
         const e = (t - s.tourPhaseStart) / stop.hold;
-        const push = glide(e) * 0.07;
-        P.lerpVectors(stop.framed.position, stop.framed.target, push);
+        P.lerpVectors(stop.framed.position, stop.framed.target, glide(e) * 0.07);
         P.y += Math.sin(t * 0.3) * 0.03;
         T.copy(stop.framed.target);
         if (e >= 1) {
@@ -327,24 +260,65 @@ export function CameraRig({ canRotate }: { canRotate: boolean }) {
           world.set({ tourCaption: null });
         }
       }
-      camera.position.copy(P);
-      c.target.copy(T);
     }
-    c.update();
+    if (s.mode === "hold") {
+      // A held frame still breathes: a slow arc and a sway on two periods
+      // that never line up, like a hand holding the shot.
+      const e = t - s.holdStart;
+      const ramp = w.reduced ? 0 : smootherstep(e / 2.5);
+      const yaw = Math.sin((e * Math.PI * 2) / 22) * (w.spot ? 0.07 : 0.16) * ramp;
+      off.copy(s.anchorP).sub(s.anchorT).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
+      P.copy(s.anchorT).add(off);
+      P.x += Math.sin(e * 0.35) * 0.05 * s.holdScale * ramp;
+      P.y += Math.sin(e * 0.2555 + 1.4) * 0.04 * s.holdScale * ramp;
+      T.copy(s.anchorT);
+    }
+    s.baseP.copy(P);
+    s.baseT.copy(T);
+
+    // 2. The visitor's gestures on top: full 360 orbit, tilt and zoom.
+    off.copy(P).sub(T);
+    const dist = Math.max(off.length(), 0.001);
+    const yaw = Math.atan2(off.x, off.z) + i.dragX;
+    const pitch = Math.min(1.42, Math.max(0.04, Math.asin(off.y / dist) + i.dragY * 0.7));
+    // Zooming in is a real dolly: far shots travel most of the way in, close
+    // shots stop just short of the subject. Zooming out stays restrained.
+    const pullIn = dist > 12 ? 0.85 : dist > 5 ? 0.7 : 0.55;
+    const scale = i.zoom < 0 ? 1 + i.zoom * pullIn : 1 + i.zoom * 0.6;
+    // Turning away from the framed side pulls wide shots in, so a full 360
+    // circles the neighborhood instead of swinging out into the skyline.
+    const turned = Math.min(1, Math.abs(i.dragX) / (Math.PI / 2));
+    const orbitDist = dist > 22 ? dist + (22 - dist) * smootherstep(turned) : dist;
+    const radius = Math.max(0.7, orbitDist * scale);
+    desired.set(
+      T.x + Math.sin(yaw) * Math.cos(pitch) * radius,
+      T.y + Math.sin(pitch) * radius,
+      T.z + Math.cos(yaw) * Math.cos(pitch) * radius,
+    );
+    desired.y = Math.max(0.3, desired.y);
+
+    // 3. Ease the real camera onto it, so drags glide rather than snap.
+    const touchFirst = size.width < 768;
+    const k = w.reduced ? 1 : 1 - Math.exp(-(s.mode === "tour" ? 9 : touchFirst ? 8 : 5.5) * dt);
+    camera.position.lerp(desired, k);
+    s.look.lerp(T, k);
+    camera.lookAt(s.look);
+    rigState.target.copy(s.look);
+    const dbg = (window as unknown as { __rig?: { dist: number } }).__rig;
+    if (dbg) dbg.dist = camera.position.distanceTo(s.look);
+    const cam = camera as THREE.PerspectiveCamera;
+    const fov = Math.min(62, Math.max(24, 40 + i.zoom * 16));
+    if (Math.abs(cam.fov - fov) > 0.01) {
+      cam.fov += (fov - cam.fov) * k;
+      cam.updateProjectionMatrix();
+    }
+
+    // Looking into the house from outside at eye level: cut the walls away.
+    // The front of the house is already open, so only the back and side walls need it.
+    const cp = camera.position;
+    const behindWall = cp.z < HOUSE.z1 || cp.x < HOUSE.x1 || cp.x > HOUSE.x2;
+    rigState.cutaway = !w.xray && inside(s.look) && behindWall && cp.y < HOUSE.top + 1.2;
   });
 
-  return (
-    <OrbitControls
-      ref={controls}
-      makeDefault
-      enableDamping
-      dampingFactor={0.08}
-      enablePan={false}
-      enableZoom={false}
-      enableRotate={canRotate}
-      rotateSpeed={0.5}
-      minPolarAngle={0.2}
-      maxPolarAngle={1.45}
-    />
-  );
+  return null;
 }

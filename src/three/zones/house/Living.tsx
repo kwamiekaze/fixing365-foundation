@@ -94,7 +94,7 @@ function CeilingFan() {
   });
   return (
     <Hotspot id="ceiling-fan">
-      <group name="obj-ceiling-fan" position={[-1, 3.08, -2.8]}>
+      <group name="obj-ceiling-fan" position={[-1, 3.13, -2.8]}>
         <group ref={wobble} userData={{ dynamic: true }}>
           <C p={[0, -0.18, 0]} radius={0.02} h={0.36} m={M.darkMetal} />
           <C p={[0, -0.4, 0]} radius={0.16} top={0.12} h={0.16} m={M.darkMetal} />

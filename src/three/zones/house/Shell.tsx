@@ -115,17 +115,38 @@ export function Shell() {
         <WX name="wall-back-bath" x1={2} x2={6} z={-6} m={M.wallBath} />
 
         {/* Side walls */}
-        <WZ name="wall-left-kitchen" z1={-6} z2={2} x={-9} m={M.wallKitchen} />
-        <WZ name="wall-left-siding" z1={-6.1} z2={2.1} x={-9.14} m={M.siding} />
-        <WZ name="wall-right-bath" z1={-6} z2={-2.8} x={6} m={M.wallBath} />
-        <WZ name="wall-right-utility" z1={-2.8} z2={2} x={6} m={M.wallUtility} />
+        <WZ name="wall-left-kitchen" z1={-6} z2={2} x={-9} y2={H + 0.012} m={M.wallKitchen} />
+        <WZ name="wall-left-siding" z1={-6.1} z2={2.1} x={-9.14} y2={H - 0.025} m={M.siding} />
+        <WZ name="wall-right-bath" z1={-6} z2={-2.8} x={6} y2={H + 0.012} m={M.wallBath} />
+        <WZ name="wall-right-utility" z1={-2.8} z2={2} x={6} y2={H + 0.012} m={M.wallUtility} />
 
         {/* Partitions */}
-        <WZ name="partition-kitchen-living" z1={-6} z2={-3.4} x={-4} m={M.wallWarm} />
-        <WZ name="partition-living-thermostat" z1={-6} z2={-4.3} x={2} m={M.wallWarm} />
-        <WZ z1={-4.3} z2={-3.4} x={2} y1={2.25} m={M.wallWarm} />
-        <WZ name="partition-living-utility" z1={-3.4} z2={2} x={2} m={M.wallWarm} />
-        <WX name="partition-bath-utility" x1={2} x2={6} z={-2.8} m={M.wallBath} />
+        <WZ
+          name="partition-kitchen-living"
+          z1={-6}
+          z2={-3.4}
+          x={-4}
+          y2={H - 0.012}
+          m={M.wallWarm}
+        />
+        <WZ
+          name="partition-living-thermostat"
+          z1={-6}
+          z2={-4.3}
+          x={2}
+          y2={H - 0.012}
+          m={M.wallWarm}
+        />
+        <WZ z1={-4.3} z2={-3.4} x={2} y1={2.25} y2={H - 0.012} m={M.wallWarm} />
+        <WZ name="partition-living-utility" z1={-3.4} z2={2} x={2} y2={H - 0.012} m={M.wallWarm} />
+        <WX
+          name="partition-bath-utility"
+          x1={2.08}
+          x2={5.92}
+          z={-2.8}
+          y2={H - 0.024}
+          m={M.wallBath}
+        />
 
         {/* Cutaway front: knee walls, front door wall */}
         <WX name="front-knee-left" x1={-9} x2={0.2} z={2} y2={0.7} m={M.siding} />
@@ -142,19 +163,19 @@ export function Shell() {
         <B p={[1.9, 0.08, -1.3]} s={[0.04, 0.12, 4.2]} m={M.trim} cast={false} />
 
         {/* Exposed ceiling beams, cutaway so the camera can look in */}
-        {[-8, -6, -4, -2, -1, 0, 2, 4].map((x) => (
+        {[-7.6, -5.8, -2.6, -1, 0.6, 3.4, 5.2].map((x) => (
           <B
             key={x}
             name="ceiling-beam"
-            p={[x, H - 0.1, -2]}
-            s={[0.16, 0.2, 8]}
+            p={[x, H + 0.03, -2]}
+            s={[0.16, 0.2, 8.1]}
             m={M.floorWoodDark}
           />
         ))}
         <B
           name="ceiling-ridge"
-          p={[-1.5, H - 0.08, -2.8]}
-          s={[15, 0.16, 0.16]}
+          p={[-1.5, H + 0.17, -2.8]}
+          s={[15.1, 0.14, 0.18]}
           m={M.floorWoodDark}
         />
       </StaticBatch>
