@@ -193,6 +193,46 @@ function hoodGeometry(frontW: number) {
   return g;
 }
 
+/**
+ * The windshield follows the cab's own curve from the hood to the roof
+ * (three points on the side profile) instead of a single flat slab, which
+ * the body's rounded top cut through and split into two panes. It is one
+ * sheet of glass inside a slightly larger black surround, lifted clear of
+ * the body all the way along; `trim` pulls the glass in from both ends so
+ * the surround shows as a frame at the cowl and the roof.
+ */
+const WS_PROFILE = [
+  new THREE.Vector2(toX(178), toY(196)),
+  new THREE.Vector2(toX(300), toY(106)),
+  new THREE.Vector2(toX(440), toY(19)),
+];
+
+function windshieldGeometry(lift: number, half: number, trim: number) {
+  const pts = WS_PROFILE.map((p, i) => {
+    const a = WS_PROFILE[Math.max(0, i - 1)]!;
+    const b = WS_PROFILE[Math.min(WS_PROFILE.length - 1, i + 1)]!;
+    const d = b.clone().sub(a).normalize();
+    return p.clone().add(new THREE.Vector2(-d.y, d.x).multiplyScalar(lift));
+  });
+  if (trim) {
+    const n = pts.length - 1;
+    pts[0]!.add(pts[1]!.clone().sub(pts[0]!).normalize().multiplyScalar(trim));
+    pts[n]!.add(pts[n - 1]!.clone().sub(pts[n]!).normalize().multiplyScalar(trim));
+  }
+  const P: number[] = [];
+  pts.forEach((p) => P.push(p.x, p.y, -half, p.x, p.y, half));
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+  const idx: number[] = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = i * 2;
+    idx.push(a, a + 1, a + 3, a, a + 3, a + 2);
+  }
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
 function VanBody() {
   const [side, far, back, front, hood] = useTexture([
     "/van/side.webp",
@@ -233,15 +273,11 @@ function VanBody() {
       noseFar: slicePlane(NOSE_L, SKIN_H, 1 - u, 1 - NOSE_START / 1245),
       front: new THREE.PlaneGeometry(frontW, FRONT_H),
       hood: hoodGeometry(frontW),
+      wsFrame: windshieldGeometry(0.03, (WIDTH - 0.1) / 2, 0),
+      wsGlass: windshieldGeometry(0.036, (WIDTH - 0.2) / 2, 0.035),
     };
   }, []);
   const z = WIDTH / 2 + 0.004;
-  // Windshield runs from the hood line up to the roof on the side profile.
-  const ws0 = new THREE.Vector2(toX(178), toY(196));
-  const ws1 = new THREE.Vector2(toX(440), toY(18));
-  const wsMid = ws0.clone().add(ws1).multiplyScalar(0.5);
-  const wsLen = ws0.distanceTo(ws1);
-  const wsAng = Math.atan2(ws1.y - ws0.y, ws1.x - ws0.x);
   return (
     <group>
       <mesh geometry={body} material={M.paint} castShadow receiveShadow />
@@ -292,14 +328,9 @@ function VanBody() {
           </mesh>
         )),
       )}
-      {/* windshield glass laid along the profile */}
-      <mesh
-        material={M.glass}
-        position={[wsMid.x - 0.02, wsMid.y + 0.02, 0]}
-        rotation={[0, 0, wsAng - Math.PI / 2]}
-      >
-        <boxGeometry args={[0.015, wsLen, WIDTH - 0.16]} />
-      </mesh>
+      {/* one-piece windshield in its black surround */}
+      <mesh material={M.trim} geometry={geo.wsFrame} />
+      <mesh material={M.glass} geometry={geo.wsGlass} />
       {/* underbody and a roof antenna */}
       <mesh material={M.trim} position={[0, 0.28, 0]}>
         <boxGeometry args={[LENGTH - 0.5, 0.18, WIDTH - 0.2]} />
