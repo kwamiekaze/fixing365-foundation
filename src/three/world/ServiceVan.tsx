@@ -138,6 +138,61 @@ const M = {
   }),
 };
 
+/**
+ * Front end, cut from the straight-on photo of the wrapped Sprinter. The
+ * fascia photo (headlights, grille, fog lights, bumper, badge painted out)
+ * stands on the nose from the bumper line up to the hood's front edge; the
+ * hood photo (wiper cowl, vents, logo and slogan, livery swooshes) is laid
+ * on a trapezoid running from that edge up to the base of the windshield,
+ * narrow at the chamfered nose and full width at the glass, so the two
+ * meet in one continuous image with no ledge between them.
+ */
+const FRONT_Y = 0.29;
+const FRONT_H = 0.82;
+const HOOD_BACK = new THREE.Vector2(toX(178), toY(196));
+
+const HOOD_KNEE = new THREE.Vector2(toX(80), toY(258));
+
+/**
+ * Two panels: a steep nose panel from the fascia up to the hood's knee,
+ * then the shallower hood to the glass, so the sheet stays clear of the
+ * body's rounded nose. The photo is a straight-on view, so each point
+ * takes its photo row from its height.
+ */
+function hoodGeometry(frontW: number) {
+  const y0 = FRONT_Y + FRONT_H;
+  const lift = 0.018;
+  const pts = [new THREE.Vector2(NOSE_X, y0), HOOD_KNEE, HOOD_BACK];
+  // Lift each point clear of the body along the sheet's outward normal.
+  const lifted = pts.map((p, i) => {
+    const a = pts[Math.max(0, i - 1)]!;
+    const b = pts[Math.min(pts.length - 1, i + 1)]!;
+    const d = b.clone().sub(a).normalize();
+    return p.clone().add(new THREE.Vector2(-d.y, d.x).multiplyScalar(lift));
+  });
+  const fw = frontW / 2;
+  const bw = (WIDTH - 0.06) / 2;
+  const span = HOOD_BACK.y - y0;
+  const t = pts.map((p) => (p.y - y0) / span); // 0 at the fascia, 1 at the glass
+  const half = t.map((k) => fw + (bw - fw) * k);
+  // Photo columns 127..1127: the fascia edge spans 145..1110, the glass 212..1042.
+  const uL = t.map((k) => (145 + (212 - 145) * k - 127) / 1000);
+  const uR = t.map((k) => (1110 + (1042 - 1110) * k - 127) / 1000);
+  const P: number[] = [];
+  const UV: number[] = [];
+  lifted.forEach((p, i) => {
+    P.push(p.x, p.y, -half[i]!, p.x, p.y, half[i]!);
+    UV.push(uL[i]!, t[i]!, uR[i]!, t[i]!);
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(UV, 2));
+  // rows: 0/1 fascia edge, 2/3 knee, 4/5 glass (even = -z, odd = +z)
+  g.setIndex([0, 1, 3, 0, 3, 2, 2, 3, 5, 2, 5, 4]);
+  g.computeVertexNormals();
+  return g;
+}
+
 function VanBody() {
   const [side, far, back, front, hood] = useTexture([
     "/van/side.webp",
@@ -171,13 +226,13 @@ function VanBody() {
   const geo = useMemo(() => {
     const u = HINGE / 1245;
     const frontW = WIDTH - 2 * NOSE_IN + 0.01;
-    const f = frontW / 2.0; // the front photo spans 2.0 m across
     return {
       main: slicePlane((1245 - HINGE) * PX, SKIN_H, u, 1),
       noseNear: slicePlane(NOSE_L, SKIN_H, NOSE_START / 1245, u),
       mainFar: slicePlane((1245 - HINGE) * PX, SKIN_H, 0, 1 - u),
       noseFar: slicePlane(NOSE_L, SKIN_H, 1 - u, 1 - NOSE_START / 1245),
-      front: slicePlane(frontW, 0.85, (1 - f) / 2, 1 - (1 - f) / 2),
+      front: new THREE.PlaneGeometry(frontW, FRONT_H),
+      hood: hoodGeometry(frontW),
     };
   }, []);
   const z = WIDTH / 2 + 0.004;
@@ -187,23 +242,6 @@ function VanBody() {
   const wsMid = ws0.clone().add(ws1).multiplyScalar(0.5);
   const wsLen = ws0.distanceTo(ws1);
   const wsAng = Math.atan2(ws1.y - ws0.y, ws1.x - ws0.x);
-  // Hood logo lies on the hood slope, lettering reading from the front.
-  const h0 = new THREE.Vector2(toX(10), toY(330));
-  const h1 = new THREE.Vector2(toX(178), toY(196));
-  const hd = h1.clone().sub(h0).normalize();
-  const hoodP = h0
-    .clone()
-    .add(h1)
-    .multiplyScalar(0.5)
-    .add(new THREE.Vector2(-hd.y, hd.x).multiplyScalar(0.09));
-  const hoodQ = new THREE.Quaternion().setFromRotationMatrix(
-    new THREE.Matrix4().makeBasis(
-      new THREE.Vector3(0, 0, 1),
-      new THREE.Vector3(hd.x, hd.y, 0),
-      new THREE.Vector3(-hd.y, hd.x, 0),
-    ),
-  );
-
   return (
     <group>
       <mesh geometry={body} material={M.paint} castShadow receiveShadow />
@@ -225,10 +263,6 @@ function VanBody() {
       <group position={[toX(HINGE), SKIN_H / 2, -z]} rotation={[0, Math.PI + NOSE_ANG, 0]}>
         <mesh material={skins.far} geometry={geo.noseFar} position={[NOSE_L / 2, 0, 0]} />
       </group>
-      {/* white cap over the chamfered nose, level with the hood front */}
-      <mesh material={M.paint} position={[(NOSE_X + toX(HINGE)) / 2, toY(306), 0]}>
-        <boxGeometry args={[toX(HINGE) - NOSE_X, 0.02, WIDTH - NOSE_IN]} />
-      </mesh>
       <mesh
         material={skins.back}
         position={[toX(1212) + 0.045, 0.27 + 2.31 / 2, 0]}
@@ -236,15 +270,15 @@ function VanBody() {
       >
         <planeGeometry args={[2.1, 2.31]} />
       </mesh>
+      {/* Sprinter front end: headlights, grille and bumper on the fascia, the
+          lettered hood sloping from the fascia's top edge up to the windshield */}
       <mesh
         material={skins.front}
         geometry={geo.front}
-        position={[NOSE_X - 0.004, 0.29 + 0.85 / 2, 0]}
+        position={[NOSE_X - 0.004, FRONT_Y + FRONT_H / 2, 0]}
         rotation={[0, -Math.PI / 2, 0]}
       />
-      <mesh material={skins.hood} quaternion={hoodQ} position={[hoodP.x, hoodP.y, 0]}>
-        <planeGeometry args={[1.03, 0.56]} />
-      </mesh>
+      <mesh material={skins.hood} geometry={geo.hood} />
       {/* dark wheel wells behind the tires */}
       {[toX(165 - 5), toX(1000 - 5)].flatMap((wx) =>
         [1, -1].map((sd) => (
