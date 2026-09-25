@@ -16,8 +16,8 @@ import { useSceneGate } from "./sceneGate";
 import { Button } from "./ui/button";
 import { LoadingScreen } from "./LoadingScreen";
 import { Fallback2D } from "./Fallback2D";
-import { ServicePanel } from "./ServicePanel";
-import { getZone, spotsForZone, zones, type ZoneId } from "@/config/world";
+import { PlayFixes, ServicePanel } from "./ServicePanel";
+import { getSpot, getZone, spotsForZone, zones, type ZoneId } from "@/config/world";
 import { supportsWebGL } from "@/lib/webgl";
 import { useWorld, world } from "@/three/world/store";
 import { stopShowcase } from "@/three/world/showcase";
@@ -35,6 +35,19 @@ export function RepairHouseHero() {
   const spot = useWorld((s) => s.spot);
   const xray = useWorld((s) => s.xray);
   const sound = useWorld((s) => s.sound);
+  // Sound is on by default; browsers only let audio start after the first
+  // tap or key, so the ambience begins on that first gesture (the splash's
+  // "Tap to continue" counts).
+  useEffect(() => {
+    const go = () => {
+      if (world.get().sound) void startAmbience();
+      off();
+    };
+    const evs = ["pointerdown", "keydown", "touchend"] as const;
+    const off = () => evs.forEach((e) => window.removeEventListener(e, go, true));
+    evs.forEach((e) => window.addEventListener(e, go, true));
+    return off;
+  }, []);
   const sceneGate = useSceneGate();
   const explored = useWorld((s) => s.explored);
   const card = useWorld((s) => s.card);
@@ -242,6 +255,12 @@ export function RepairHouseHero() {
                   {spot ? "Back" : "House"}
                 </Button>
               )}
+              {/* Card minimized: the same Play, sized to sit beside Back. */}
+              {spot &&
+                card === "hidden" &&
+                (spot === "welcome" || (!!getSpot(spot)?.service && !getSpot(spot)?.xray)) && (
+                  <PlayFixes from={spot} small />
+                )}
             </div>
             <div
               className="scrollbar-none flex gap-2 overflow-x-auto pb-1"

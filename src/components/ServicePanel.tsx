@@ -112,7 +112,7 @@ export function TellUsLink({
 }
 
 /** Plays the whole house being fixed, then the drone orbit. */
-function PlayFixes({ from }: { from?: string }) {
+export function PlayFixes({ from, small }: { from?: string; small?: boolean }) {
   return (
     <button
       type="button"
@@ -123,7 +123,7 @@ function PlayFixes({ from }: { from?: string }) {
           : "Play: watch every fix, start to finish"
       }
       title="Watch every fix"
-      className="play-fixes group relative grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_24px_-6px] shadow-primary/70 transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+      className={`play-fixes group relative grid ${small ? "size-11" : "size-12"} shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_24px_-6px] shadow-primary/70 transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-panel`}
     >
       <span
         aria-hidden

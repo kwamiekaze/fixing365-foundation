@@ -55,6 +55,8 @@ function potGeometry(r: number, h: number) {
   const pts = [
     new THREE.Vector2(0, 0),
     new THREE.Vector2(r * 0.72, 0),
+    // doubled foot point keeps a crisp base edge instead of a smeared bottom
+    new THREE.Vector2(r * 0.72, 0.001),
     new THREE.Vector2(r * 0.8, h * 0.08),
     new THREE.Vector2(r * 0.94, h * 0.82),
     new THREE.Vector2(r * 1.04, h * 0.84),

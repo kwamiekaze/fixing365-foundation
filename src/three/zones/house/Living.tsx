@@ -194,12 +194,122 @@ function CeilingFan() {
   );
 }
 
+/**
+ * Doorknob strike through drywall, built once: a knob-sized ragged hole
+ * showing the dark wall cavity, a rim of crushed white gypsum where the
+ * paper face tore away, a few torn paper flaps, a faint dent halo, and
+ * hairline cracks running out from the impact and branching as they go.
+ * Everything is drawn in the wall's plane (local x along the wall, y up).
+ */
+function drywallDamage() {
+  let seed = 911;
+  const r = () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+  const N = 22;
+  const edge: number[] = [];
+  for (let i = 0; i < N; i++) edge.push(0.036 * (0.82 + r() * 0.4));
+  const ring = (k: number, jitter: number) =>
+    edge.map((e, i) => {
+      const a = (i / N) * Math.PI * 2;
+      const d = e * k * (1 + (r() - 0.5) * jitter);
+      return new THREE.Vector2(Math.cos(a) * d, Math.sin(a) * d);
+    });
+  const inner = ring(1, 0);
+  const holeShape = new THREE.Shape(inner);
+  const rimShape = new THREE.Shape(ring(1.55, 0.5));
+  rimShape.holes.push(new THREE.Path([...inner].reverse()));
+  const haloShape = new THREE.Shape(ring(2.5, 0.25));
+  haloShape.holes.push(new THREE.Path(ring(1.5, 0).reverse()));
+
+  // Hairline cracks: thin quads along wandering, branching polylines.
+  const pos: number[] = [];
+  const quad = (a: THREE.Vector2, b: THREE.Vector2, w: number) => {
+    const d = b.clone().sub(a).normalize();
+    const n = new THREE.Vector2(-d.y, d.x).multiplyScalar(w / 2);
+    const p = [a.clone().add(n), a.clone().sub(n), b.clone().sub(n), b.clone().add(n)];
+    for (const i of [0, 1, 2, 0, 2, 3]) pos.push(p[i]!.x, p[i]!.y, 0);
+  };
+  const crack = (start: THREE.Vector2, ang: number, len: number, w: number, depth: number) => {
+    let p = start.clone();
+    let a = ang;
+    const steps = 4 + Math.floor(r() * 3);
+    for (let i = 0; i < steps; i++) {
+      a += (r() - 0.5) * 0.9;
+      const q = p
+        .clone()
+        .add(new THREE.Vector2(Math.cos(a), Math.sin(a)).multiplyScalar(len / steps));
+      quad(p, q, w * (1 - i / (steps + 1)));
+      if (depth > 0 && r() < 0.35)
+        crack(q, a + (r() < 0.5 ? 0.7 : -0.7), len * 0.45, w * 0.6, depth - 1);
+      p = q;
+    }
+  };
+  const cracks = 9;
+  for (let i = 0; i < cracks; i++) {
+    const a = (i / cracks) * Math.PI * 2 + (r() - 0.5) * 0.5;
+    const start = new THREE.Vector2(Math.cos(a), Math.sin(a)).multiplyScalar(0.045);
+    crack(start, a, 0.07 + r() * 0.17, 0.004, 1);
+  }
+  const crackGeo = new THREE.BufferGeometry();
+  crackGeo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  crackGeo.computeVertexNormals();
+
+  // Torn paper flaps curling out of the rim.
+  const flaps = Array.from({ length: 4 }, (_, i) => {
+    const a = (i / 4) * Math.PI * 2 + r();
+    const d = 0.04 + r() * 0.012;
+    const s = new THREE.Shape([
+      new THREE.Vector2(0, -0.01),
+      new THREE.Vector2(0.018 + r() * 0.01, 0),
+      new THREE.Vector2(0, 0.01),
+    ]);
+    return { g: new THREE.ShapeGeometry(s), x: Math.cos(a) * d, y: Math.sin(a) * d, a };
+  });
+
+  const off = (units: number) => ({
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -units,
+  });
+  return {
+    hole: new THREE.ShapeGeometry(holeShape),
+    rim: new THREE.ShapeGeometry(rimShape),
+    halo: new THREE.ShapeGeometry(haloShape),
+    cracks: crackGeo,
+    flaps,
+    m: {
+      cavity: new THREE.MeshStandardMaterial({ color: "#17120e", roughness: 1, ...off(4) }),
+      gypsum: new THREE.MeshStandardMaterial({ color: "#ece8dd", roughness: 1, ...off(3) }),
+      halo: new THREE.MeshStandardMaterial({
+        color: "#5a5146",
+        roughness: 1,
+        transparent: true,
+        opacity: 0.16,
+        depthWrite: false,
+        ...off(2),
+      }),
+      crack: new THREE.MeshBasicMaterial({
+        color: "#5f564b",
+        side: THREE.DoubleSide,
+        ...off(5),
+      }),
+      paper: new THREE.MeshStandardMaterial({
+        color: "#f3efe6",
+        roughness: 0.9,
+        side: THREE.DoubleSide,
+      }),
+    },
+  };
+}
+
 function DrywallHole() {
   const fixed = useFixed("drywall-hole");
-  const hole = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#2a2019", roughness: 1 }),
-    [],
-  );
+  const dmg = useMemo(drywallDamage, []);
+  // Wall face is x = 1.92 (partition at x = 2, 16 cm thick), facing the living room.
+  const at = (x: number): [number, number, number] => [x, 0.95, -2.62];
+  const face: [number, number, number] = [0, -Math.PI / 2, 0];
   return (
     <Hotspot id="drywall-hole">
       <group name="obj-hall-door" position={[1.9, 0, -3.4]} rotation={[0, fixed ? -1.2 : -0.9, 0]}>
@@ -209,28 +319,38 @@ function DrywallHole() {
       </group>
       {!fixed && (
         <group name="obj-drywall-hole">
-          <mesh position={[1.915, 0.95, -2.62]} rotation={[0, -Math.PI / 2, 0]} material={hole}>
-            <circleGeometry args={[0.13, 9]} />
-          </mesh>
+          <mesh position={at(1.9186)} rotation={face} geometry={dmg.halo} material={dmg.m.halo} />
+          <mesh position={at(1.9182)} rotation={face} geometry={dmg.rim} material={dmg.m.gypsum} />
+          <mesh position={at(1.9178)} rotation={face} geometry={dmg.hole} material={dmg.m.cavity} />
           <mesh
-            position={[1.914, 0.95, -2.62]}
-            rotation={[0, -Math.PI / 2, 0]}
-            material={M.wallUtility}
-          >
-            <ringGeometry args={[0.12, 0.2, 9]} />
-          </mesh>
+            position={at(1.9184)}
+            rotation={face}
+            geometry={dmg.cracks}
+            material={dmg.m.crack}
+          />
+          {dmg.flaps.map((f, i) => (
+            <mesh
+              key={i}
+              geometry={f.g}
+              material={dmg.m.paper}
+              position={[1.914 - i * 0.001, 0.95 + f.y, -2.62 + f.x]}
+              rotation={[f.a * 0.3, -Math.PI / 2 + 0.5, f.a]}
+            />
+          ))}
+          {/* crumbs of gypsum on the floor under the strike */}
           {(
             [
-              [1.7, -2.5],
-              [1.55, -2.7],
-              [1.75, -2.8],
-            ] as [number, number][]
-          ).map(([x, z], i) => (
+              [1.86, -2.58, 0.018],
+              [1.83, -2.66, 0.012],
+              [1.88, -2.7, 0.014],
+              [1.8, -2.55, 0.01],
+            ] as [number, number, number][]
+          ).map(([x, z, sz], i) => (
             <B
               key={i}
-              p={[x, 0.07, z]}
-              r={[0, i, 0]}
-              s={[0.08, 0.02, 0.06]}
+              p={[x, 0.056, z]}
+              r={[0, i * 1.3, 0]}
+              s={[sz, sz * 0.6, sz * 0.8]}
               m={M.wall}
               cast={false}
             />

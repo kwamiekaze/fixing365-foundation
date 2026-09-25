@@ -42,7 +42,7 @@ let state: WorldState = {
   zone: "house",
   spot: "welcome",
   xray: false,
-  sound: false,
+  sound: true,
   fixed: {},
   reduced: false,
   explored: false,

@@ -1,5 +1,6 @@
 import { StaticBatch } from "../../world/StaticBatch";
 import { useMemo } from "react";
+import * as THREE from "three";
 import { B, C, M, S, Pipe, glow } from "../../world/kit";
 import { Blink, Stream, Drip } from "../../world/fx";
 import { Hotspot } from "../../world/Hotspot";
@@ -54,6 +55,44 @@ function BaseCabinets() {
     </group>
   );
 }
+
+/**
+ * The leak's puddle as one flat, irregular sheet (a main pool with a lobe
+ * running toward the island) instead of two overlapping discs. A single
+ * surface with no depth writes and a nudge toward the camera can't fight
+ * the floor tiles or itself, so it no longer flickers.
+ */
+const PUDDLE = (() => {
+  const pts: THREE.Vector2[] = [];
+  const lobe = new THREE.Vector2(0.65, 0.45);
+  const lobeR = 0.45;
+  const N = 72;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    const dir = new THREE.Vector2(Math.cos(a), Math.sin(a));
+    let r = 0.95 * (1 + 0.05 * Math.sin(a * 5 + 0.7) + 0.035 * Math.sin(a * 11 + 2.1));
+    // How far this ray reaches through the lobe disc, if it crosses it.
+    const t = lobe.dot(dir);
+    const perp2 = lobe.lengthSq() - t * t;
+    if (perp2 < lobeR * lobeR) r = Math.max(r, t + Math.sqrt(lobeR * lobeR - perp2));
+    // Shape y becomes -z once laid flat, so flip it to keep the lobe at +z.
+    pts.push(new THREE.Vector2(dir.x * r, -dir.y * r));
+  }
+  return {
+    geo: new THREE.ShapeGeometry(new THREE.Shape(pts)),
+    mat: new THREE.MeshStandardMaterial({
+      color: "#5aa9c9",
+      roughness: 0.02,
+      metalness: 0.2,
+      transparent: true,
+      opacity: 0.45,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -4,
+    }),
+  };
+})();
 
 function SinkLeak() {
   const fixed = useFixed("kitchen-pipe");
@@ -131,10 +170,14 @@ function SinkLeak() {
         )}
       </group>
       {!fixed && (
-        <group name="obj-kitchen-puddle">
-          <C p={[-7.05, 0.056, -4.55]} radius={0.95} h={0.006} seg={28} m={M.puddle} cast={false} />
-          <C p={[-6.4, 0.056, -4.1]} radius={0.45} h={0.006} seg={20} m={M.puddle} cast={false} />
-        </group>
+        <mesh
+          name="obj-kitchen-puddle"
+          position={[-7.05, 0.054, -4.55]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          geometry={PUDDLE.geo}
+          material={PUDDLE.mat}
+          renderOrder={2}
+        />
       )}
     </Hotspot>
   );
@@ -217,7 +260,9 @@ export function Kitchen() {
       <SinkLeak />
       <Fridge />
       <Island />
-      <PottedPlant p={[-7.62, 1.3, -5.86]} kind="herb" pot="terracotta" scale={1.25} seed={3} />
+      {/* stone window ledge deep enough to hold the pot, sitting on the window sill */}
+      <B p={[-7.2, 1.335, -5.775]} s={[1.5, 0.03, 0.23]} m={M.counter} />
+      <PottedPlant p={[-7.62, 1.35, -5.775]} kind="herb" pot="terracotta" scale={1.1} seed={3} />
     </group>
   );
 }
