@@ -1,7 +1,8 @@
 import { useFrame } from "@react-three/fiber";
 import { forwardRef, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { world } from "./store";
+import { rigState, world } from "./store";
+import { fetchCue } from "@/lib/ambience";
 import { isEvening, useClockHour } from "./kit";
 
 /**
@@ -277,6 +278,7 @@ function Fetch({ owner, target }: { owner: [number, number]; target: [number, nu
   const T = useMemo(() => new THREE.Vector3(target[0], 0, target[1]), [target]);
   const side = useMemo(() => O.clone().add(new THREE.Vector3(0.9, 0, 0.5)), [O]);
   const tmp = useMemo(() => new THREE.Vector3(), []);
+  const lastT = useRef(0);
 
   useFrame(({ clock }) => {
     const p = person.current;
@@ -285,6 +287,16 @@ function Fetch({ owner, target }: { owner: [number, number]; target: [number, nu
     if (!p?.root || !d || !b) return;
     const reduced = world.get().reduced;
     const t = reduced ? 5 : clock.elapsedTime % 7;
+    // Sound cues, fired once as the animation crosses each moment.
+    const prevT = lastT.current;
+    lastT.current = t;
+    if (world.get().sound && !reduced) {
+      const near = Math.max(0, 1 - rigState.target.distanceTo(O) / 30);
+      const crossed = (m: number) => (prevT < m && t >= m) || (prevT > t && t >= m && m < 0.2);
+      if (crossed(0.55)) fetchCue("throw", near);
+      if (crossed(1.8)) fetchCue("land", near);
+      if (crossed(2.45)) fetchCue("pickup", near);
+    }
     p.root.lookAt(T.x, 0, T.z);
     idle(p, clock.elapsedTime, 1);
     p.elbowR.rotation.x = t < 0.5 ? -1.2 : t < 0.8 ? -1.2 + (t - 0.5) * 3.5 : -0.25;

@@ -1,7 +1,17 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSceneGestures } from "./useSceneGestures";
 import { Link } from "@tanstack/react-router";
-import { Check, RotateCcw, Rows3, ScanEye, ScanSearch, Square } from "lucide-react";
+import {
+  Check,
+  RotateCcw,
+  Rows3,
+  ScanEye,
+  ScanSearch,
+  Square,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import { startAmbience, stopAmbience } from "@/lib/ambience";
 import { Button } from "./ui/button";
 import { LoadingScreen } from "./LoadingScreen";
 import { Fallback2D } from "./Fallback2D";
@@ -23,6 +33,7 @@ export function RepairHouseHero() {
   const zone = useWorld((s) => s.zone);
   const spot = useWorld((s) => s.spot);
   const xray = useWorld((s) => s.xray);
+  const sound = useWorld((s) => s.sound);
   const explored = useWorld((s) => s.explored);
   const card = useWorld((s) => s.card);
   const touring = useWorld((s) => s.touring);
@@ -98,6 +109,22 @@ export function RepairHouseHero() {
             X-Ray
           </Button>
         )}
+        <Button
+          variant={sound ? "hero" : "inverse"}
+          size="sm"
+          aria-pressed={sound}
+          aria-label={sound ? "Sound off" : "Sound on"}
+          title={sound ? "Sound off" : "Sound on"}
+          onClick={() => {
+            const on = !sound;
+            world.set({ sound: on });
+            if (on) void startAmbience();
+            else stopAmbience();
+          }}
+        >
+          {sound ? <Volume2 /> : <VolumeX />}
+          <span className="max-md:sr-only">{sound ? "Sound on" : "Sound off"}</span>
+        </Button>
         <Button variant="inverse" size="sm" onClick={() => setSimple((v) => !v)}>
           <Rows3 />
           <span className="max-md:sr-only">{useSimple ? "3D view" : "Simple view"}</span>

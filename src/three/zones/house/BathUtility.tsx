@@ -310,12 +310,6 @@ function Detectors() {
           </Blink>
         )}
       </group>
-      {fixed && (
-        <group name="obj-co-detector" position={[5.12, 2.9, -2.7]}>
-          <B s={[0.12, 0.16, 0.04]} m={M.white} />
-          <S p={[0, 0.04, 0.025]} radius={0.01} m={green} />
-        </group>
-      )}
     </Hotspot>
   );
 }

@@ -7,6 +7,8 @@ export interface WorldState {
   zone: ZoneId;
   spot: string | null;
   xray: boolean;
+  /** Neighborhood sound on or off (off until the visitor turns it on). */
+  sound: boolean;
   fixed: Record<string, boolean>;
   reduced: boolean;
   /** Set when a user drags or picks a view, used to hide the intro copy. */
@@ -40,6 +42,7 @@ let state: WorldState = {
   zone: "house",
   spot: "welcome",
   xray: false,
+  sound: false,
   fixed: {},
   reduced: false,
   explored: false,
