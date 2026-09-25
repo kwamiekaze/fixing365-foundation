@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { openSceneGate } from "./sceneGate";
 import video from "@/assets/fixing365-splash.mp4.asset.json";
 import poster from "@/assets/fixing365-splash-poster.jpg.asset.json";
-
 
 /** Full-screen intro video shown on every homepage load; plays once, over the already-loading site. */
 export function SplashScreen() {
@@ -10,12 +10,16 @@ export function SplashScreen() {
 
   useEffect(() => {
     setShow(true);
+    // Safety net: start the scene even if the video never plays.
+    const id = window.setTimeout(openSceneGate, 3500);
+    return () => window.clearTimeout(id);
   }, []);
 
   if (!show) return null;
 
   const dismiss = () => {
     if (leaving) return;
+    openSceneGate();
     setLeaving(true);
     window.setTimeout(() => setShow(false), 450);
   };
@@ -36,6 +40,7 @@ export function SplashScreen() {
         muted
         playsInline
         onEnded={dismiss}
+        onPlaying={() => window.setTimeout(openSceneGate, 1750)}
         preload="auto"
         disablePictureInPicture
         className="pointer-events-none h-full w-full object-cover"

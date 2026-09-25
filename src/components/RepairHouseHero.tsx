@@ -12,6 +12,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { startAmbience, stopAmbience } from "@/lib/ambience";
+import { useSceneGate } from "./sceneGate";
 import { Button } from "./ui/button";
 import { LoadingScreen } from "./LoadingScreen";
 import { Fallback2D } from "./Fallback2D";
@@ -34,6 +35,7 @@ export function RepairHouseHero() {
   const spot = useWorld((s) => s.spot);
   const xray = useWorld((s) => s.xray);
   const sound = useWorld((s) => s.sound);
+  const sceneGate = useSceneGate();
   const explored = useWorld((s) => s.explored);
   const card = useWorld((s) => s.card);
   const touring = useWorld((s) => s.touring);
@@ -74,7 +76,7 @@ export function RepairHouseHero() {
           <Fallback2D />
         ) : (
           <Suspense fallback={<LoadingScreen />}>
-            <Scene onZoneDetail={onZoneDetail} />
+            {sceneGate ? <Scene onZoneDetail={onZoneDetail} /> : <LoadingScreen />}
           </Suspense>
         )}
       </div>

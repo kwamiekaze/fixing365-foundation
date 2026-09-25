@@ -5,6 +5,8 @@ import * as THREE from "three";
 import { B, C, M, S, glow } from "../../world/kit";
 import { Blink, Spin, Stream, useFlicker } from "../../world/fx";
 import { Hotspot } from "../../world/Hotspot";
+import { PottedPlant } from "../../world/Plants";
+import { RoundedBox } from "@react-three/drei";
 import { Label } from "../../world/Label";
 import { useFixed, world } from "../../world/store";
 
@@ -305,8 +307,7 @@ function FlatPack() {
               );
             }),
           )}
-          <C p={[0.26, BH + 0.08, 0]} radius={0.07} top={0.09} h={0.14} m={M.white} />
-          <S p={[0.26, BH + 0.24, 0]} radius={0.12} s={[0.13, 0.16, 0.13]} m={M.plant} />
+          <PottedPlant p={[0.26, BH, 0]} kind="fern" pot="charcoal" scale={0.55} seed={8} />
         </group>
       ) : (
         <group name="obj-flatpack-build" position={[1.2, 0, -0.9]} rotation={[0, -Math.PI / 2, 0]}>
@@ -457,13 +458,90 @@ function Furniture() {
   return (
     <group name="living-furniture">
       <group name="obj-sofa" position={[-1.7, 0, -1.4]}>
-        <B p={[0, 0.25, 0]} s={[2.3, 0.42, 0.95]} m={M.fabric} />
-        <B p={[0, 0.62, 0.38]} s={[2.3, 0.55, 0.22]} m={M.fabric} />
-        <B p={[-1.08, 0.46, 0]} s={[0.18, 0.3, 0.95]} m={M.fabric} />
-        <B p={[1.08, 0.46, 0]} s={[0.18, 0.3, 0.95]} m={M.fabric} />
-        <B p={[-0.55, 0.52, -0.05]} s={[1.0, 0.12, 0.8]} m={M.fabric} />
-        <B p={[0.55, 0.52, -0.05]} s={[1.0, 0.12, 0.8]} m={M.fabric} />
-        <B p={[-0.8, 0.72, 0.22]} r={[0.2, 0, 0.1]} s={[0.4, 0.36, 0.12]} m={M.fabricWarm} />
+        {/* Upholstered sofa: rounded frame, arms and back, two plump seat cushions, back cushions, throw pillows, wooden legs */}
+        <RoundedBox
+          args={[2.3, 0.3, 0.95]}
+          radius={0.06}
+          smoothness={3}
+          position={[0, 0.27, 0]}
+          material={M.fabric}
+          castShadow
+          receiveShadow
+        />
+        <RoundedBox
+          args={[2.3, 0.6, 0.22]}
+          radius={0.08}
+          smoothness={3}
+          position={[0, 0.62, 0.37]}
+          material={M.fabric}
+          castShadow
+        />
+        {[-1.07, 1.07].map((x) => (
+          <RoundedBox
+            key={x}
+            args={[0.2, 0.36, 0.95]}
+            radius={0.08}
+            smoothness={3}
+            position={[x, 0.5, 0]}
+            material={M.fabric}
+            castShadow
+          />
+        ))}
+        {[-0.48, 0.48].map((x) => (
+          <group key={x}>
+            <RoundedBox
+              args={[0.94, 0.14, 0.74]}
+              radius={0.06}
+              smoothness={3}
+              position={[x, 0.49, -0.07]}
+              material={M.fabric}
+              castShadow
+            />
+            <RoundedBox
+              args={[0.92, 0.4, 0.16]}
+              radius={0.07}
+              smoothness={3}
+              position={[x, 0.76, 0.22]}
+              rotation={[-0.12, 0, 0]}
+              material={M.fabric}
+              castShadow
+            />
+          </group>
+        ))}
+        <RoundedBox
+          args={[0.42, 0.38, 0.12]}
+          radius={0.06}
+          smoothness={3}
+          position={[-0.78, 0.74, 0.1]}
+          rotation={[0.25, 0.1, 0.12]}
+          material={M.fabricWarm}
+          castShadow
+        />
+        <RoundedBox
+          args={[0.38, 0.34, 0.11]}
+          radius={0.06}
+          smoothness={3}
+          position={[0.82, 0.72, 0.1]}
+          rotation={[0.28, -0.15, -0.1]}
+          material={M.navy}
+          castShadow
+        />
+        {[
+          [-1.05, -0.38],
+          [1.05, -0.38],
+          [-1.05, 0.38],
+          [1.05, 0.38],
+        ].map(([x, z], i) => (
+          <C
+            key={i}
+            p={[x!, 0.06, z!]}
+            radius={0.025}
+            top={0.035}
+            h={0.12}
+            m={M.floorWoodDark}
+            seg={8}
+          />
+        ))}
       </group>
       <group name="obj-coffee-table" position={[-1.6, 0, -3.1]}>
         <B p={[0, 0.38, 0]} s={[1.2, 0.05, 0.6]} m={M.woodLight} />
@@ -484,10 +562,7 @@ function Furniture() {
         <C p={[0, 0.8, 0]} radius={0.015} h={1.6} m={M.darkMetal} seg={6} />
         <C p={[0, 1.62, 0]} radius={0.22} top={0.14} h={0.28} m={lamp} />
       </group>
-      <group name="obj-plant" position={[-3.4, 0, -5.4]}>
-        <C p={[0, 0.2, 0]} radius={0.18} top={0.22} h={0.4} m={M.white} />
-        <S p={[0, 0.72, 0]} radius={0.3} s={[0.3, 0.45, 0.3]} m={M.plant} />
-      </group>
+      <PottedPlant p={[-3.4, 0, -5.4]} kind="fiddle" pot="white" scale={1.15} seed={5} />
     </group>
   );
 }

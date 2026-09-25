@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { B, C, M, S, Pipe, glow } from "../../world/kit";
 import { Blink, Stream, Drip } from "../../world/fx";
 import { Hotspot } from "../../world/Hotspot";
+import { PottedPlant } from "../../world/Plants";
 import { Label } from "../../world/Label";
 import { useFixed } from "../../world/store";
 
@@ -69,9 +70,26 @@ function SinkLeak() {
         {/* basin and faucet */}
         <B p={[0, 0.84, 0.02]} s={[0.72, 0.18, 0.46]} m={M.steel} />
         <B p={[0, 0.915, 0.02]} s={[0.66, 0.02, 0.4]} m={M.darkMetal} />
-        <C p={[0, 1.12, -0.22]} radius={0.025} h={0.36} m={M.chrome} />
-        <Pipe a={[0, 1.3, -0.22]} b={[0, 1.3, 0.02]} radius={0.022} m={M.chrome} />
-        <C p={[0.12, 0.98, -0.22]} radius={0.02} h={0.08} m={M.chrome} />
+        {/* Pull-down gooseneck faucet: deck plate, column, arched neck, spray head, side lever */}
+        <group name="obj-faucet" position={[0, 0.955, -0.21]}>
+          <C p={[0, 0.006, 0]} radius={0.04} h={0.012} m={M.chrome} />
+          <C p={[0, 0.14, 0]} radius={0.017} top={0.015} h={0.27} m={M.chrome} />
+          <mesh
+            material={M.chrome}
+            position={[0, 0.275, 0.085]}
+            rotation={[0, Math.PI / 2, 0]}
+            castShadow
+          >
+            <torusGeometry args={[0.085, 0.015, 12, 28, Math.PI]} />
+          </mesh>
+          <C p={[0, 0.235, 0.17]} radius={0.019} top={0.017} h={0.08} m={M.chrome} />
+          <C p={[0, 0.193, 0.17]} radius={0.014} h={0.006} m={M.darkMetal} />
+          <group position={[0.028, 0.1, 0]} rotation={[0, 0, -0.35]}>
+            <C p={[0.035, 0, 0]} r={[0, 0, Math.PI / 2]} radius={0.007} h={0.07} m={M.chrome} />
+            <C radius={0.013} h={0.03} m={M.chrome} />
+          </group>
+        </group>
+        <C name="obj-soap-pump" p={[0.2, 0.99, -0.22]} radius={0.016} h={0.07} m={M.chrome} />
         {/* drain and P-trap */}
         <C p={[0, 0.66, 0.02]} radius={0.035} h={0.2} m={M.pvc} />
         <Pipe a={[0, 0.56, 0.02]} b={[0, 0.46, 0.08]} radius={0.035} m={M.pvc} />
@@ -199,8 +217,7 @@ export function Kitchen() {
       <SinkLeak />
       <Fridge />
       <Island />
-      <C name="obj-window-plant" p={[-7.6, 1.36, -5.85]} radius={0.07} h={0.12} m={M.cardboard} />
-      <S p={[-7.6, 1.5, -5.85]} radius={0.1} m={M.plant} />
+      <PottedPlant p={[-7.62, 1.3, -5.86]} kind="herb" pot="terracotta" scale={1.25} seed={3} />
     </group>
   );
 }

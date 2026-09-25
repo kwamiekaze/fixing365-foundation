@@ -82,6 +82,86 @@ texturize(M.shingle, "shingles", 0.45);
 texturize(M.shingleDark, "shingles", 0.45, "#b5b8bd");
 texturize(M.sidewalk, "pavers", 0.33);
 
+/* ---------- Procedural surface detail for furniture (drawn once in the browser) ---------- */
+function surface(size: number, draw: (g: CanvasRenderingContext2D, r: () => number) => void) {
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  let seed = 11;
+  const r = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+  draw(c.getContext("2d")!, r);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  return t;
+}
+if (typeof document !== "undefined") {
+  /** Wood grain: long wavy fibres with a few darker growth lines. Light grey so it tints to each wood colour. */
+  const wood = surface(512, (g, r) => {
+    g.fillStyle = "#e9e9e9";
+    g.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 180; i++) {
+      const y = r() * 512;
+      g.strokeStyle = `rgba(60,40,25,${0.04 + r() * 0.1})`;
+      g.lineWidth = 0.6 + r() * 2.4;
+      g.beginPath();
+      g.moveTo(0, y);
+      for (let x = 0; x <= 512; x += 32) g.lineTo(x, y + Math.sin(x * 0.012 + i) * (2 + r() * 5));
+      g.stroke();
+    }
+  });
+  /** Upholstery weave: fine cross-hatch with slubs. */
+  const fabric = surface(256, (g, r) => {
+    g.fillStyle = "#e2e2e2";
+    g.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 256; i += 2) {
+      g.fillStyle = `rgba(0,0,0,${0.05 + r() * 0.05})`;
+      g.fillRect(0, i, 256, 1);
+      g.fillStyle = `rgba(255,255,255,${0.04 + r() * 0.05})`;
+      g.fillRect(i, 0, 1, 256);
+    }
+    for (let k = 0; k < 400; k++) {
+      g.fillStyle = `rgba(0,0,0,${r() * 0.06})`;
+      g.fillRect(r() * 256, r() * 256, 2 + r() * 5, 1);
+    }
+  });
+  fabric.repeat.set(4, 4);
+  /** Quartz countertop: soft grey veins and speckle on white. */
+  const quartz = surface(512, (g, r) => {
+    g.fillStyle = "#f4f4f2";
+    g.fillRect(0, 0, 512, 512);
+    for (let k = 0; k < 1400; k++) {
+      g.fillStyle = `rgba(90,90,95,${r() * 0.12})`;
+      g.fillRect(r() * 512, r() * 512, 1.5, 1.5);
+    }
+    for (let v = 0; v < 7; v++) {
+      g.strokeStyle = `rgba(120,120,130,${0.08 + r() * 0.12})`;
+      g.lineWidth = 0.8 + r() * 2;
+      g.beginPath();
+      let x = r() * 512;
+      let y = 0;
+      g.moveTo(x, y);
+      while (y < 512) {
+        x += (r() - 0.5) * 60;
+        y += 30 + r() * 40;
+        g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+  });
+  for (const m of [M.woodLight, M.woodRaw, M.floorWoodDark]) {
+    m.map = wood;
+    m.needsUpdate = true;
+  }
+  for (const m of [M.fabric, M.fabricWarm]) {
+    m.map = fabric;
+    m.roughness = 0.98;
+    m.needsUpdate = true;
+  }
+  M.counter.map = quartz;
+  M.counter.needsUpdate = true;
+}
+
 /** Walls that fade in X-Ray mode. */
 export const xrayMaterials = [
   M.wall,
