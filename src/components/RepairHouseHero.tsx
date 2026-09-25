@@ -270,7 +270,7 @@ export function RepairHouseHero() {
                 <button
                   key={c.id}
                   onClick={() => world.selectSpot(c.id)}
-                  className={`min-h-11 shrink-0 rounded-md border px-4 text-xs font-bold backdrop-blur-md transition ${spot === c.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-panel text-foreground hover:border-primary"}`}
+                  className={`glass-chip min-h-11 shrink-0 rounded-md border px-4 text-xs font-bold transition ${spot === c.id ? "border-primary bg-primary text-primary-foreground" : "text-white hover:border-primary"}`}
                 >
                   {c.chip}
                 </button>

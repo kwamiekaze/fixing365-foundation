@@ -34,6 +34,9 @@ body { margin:0; background:var(--background); color:var(--foreground); font-fam
 /* Scene cards: see-through glass so the house stays visible behind them. A
    light blur and a soft dark wash keep the scene readable; text gets a
    tight shadow so every line stays crisp over bright or busy backgrounds. */
+/* Problem chips along the bottom: same see-through glass as the cards so
+   the scene shows through; bold white text with a tight shadow stays legible. */
+.glass-chip:not(.bg-primary) { background: oklch(.13 .025 255 / 38%); border-color: oklch(1 0 0 / 20%); -webkit-backdrop-filter: blur(3px) saturate(1.15); backdrop-filter: blur(3px) saturate(1.15); text-shadow: 0 1px 2px oklch(0 0 0 / 90%), 0 0 8px oklch(0 0 0 / 60%); }
 .glass-card { background: linear-gradient(180deg, oklch(.14 .025 255 / 30%), oklch(.12 .025 255 / 42%)); border: 1px solid oklch(1 0 0 / 16%); box-shadow: 0 10px 34px -12px oklch(0 0 0 / 55%); -webkit-backdrop-filter: blur(3px) saturate(1.15); backdrop-filter: blur(3px) saturate(1.15); color: #fff; text-shadow: 0 1px 2px oklch(0 0 0 / 90%), 0 0 10px oklch(0 0 0 / 55%); }
 .glass-card [class*="text-foreground/"] { color: oklch(.98 .005 80); }
 .glass-card [class*="bg-foreground/5"] { background: oklch(.12 .02 255 / 48%); border-color: oklch(1 0 0 / 22%); }

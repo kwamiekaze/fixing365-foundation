@@ -26,28 +26,53 @@ const GLASS_ROOF = new THREE.MeshStandardMaterial({
 });
 
 /** Glass pane with a slim frame and mullions, running along X at depth z. */
+/**
+ * See-in glass wall with a white head rail and mullions. `clip` stops the
+ * rail and trims the glass and mullions under an overhanging roof beyond
+ * x = clip.x (the garage eave over the utility room), so nothing white
+ * pokes up through the shingles.
+ */
 function GlassFront({
   x1,
   x2,
   z,
   y1,
   y2,
+  clip,
 }: {
   x1: number;
   x2: number;
   z: number;
   y1: number;
   y2: number;
+  clip?: { x: number; y: number };
 }) {
   const w = x2 - x1;
   const n = Math.max(1, Math.round(w / 2.2));
+  const cx = clip ? Math.min(clip.x, x2) : x2;
+  const topAt = (x: number) => (clip && x > clip.x ? clip.y : y2);
   return (
     <group name="front-glass">
-      <B p={[(x1 + x2) / 2, (y1 + y2) / 2, z]} s={[w, y2 - y1, 0.02]} m={GLASS_WALL} cast={false} />
-      <B p={[(x1 + x2) / 2, y2 - 0.03, z]} s={[w, 0.06, 0.07]} m={M.trim} />
-      {Array.from({ length: n + 1 }, (_, i) => (
-        <B key={i} p={[x1 + (w * i) / n, (y1 + y2) / 2, z]} s={[0.05, y2 - y1, 0.06]} m={M.trim} />
-      ))}
+      <B
+        p={[(x1 + cx) / 2, (y1 + y2) / 2, z]}
+        s={[cx - x1, y2 - y1, 0.02]}
+        m={GLASS_WALL}
+        cast={false}
+      />
+      {clip && cx < x2 && (
+        <B
+          p={[(cx + x2) / 2, (y1 + clip.y) / 2, z]}
+          s={[x2 - cx, clip.y - y1, 0.02]}
+          m={GLASS_WALL}
+          cast={false}
+        />
+      )}
+      <B p={[(x1 + cx) / 2, y2 - 0.03, z]} s={[cx - x1, 0.06, 0.07]} m={M.trim} />
+      {Array.from({ length: n + 1 }, (_, i) => {
+        const x = x1 + (w * i) / n;
+        const top = topAt(x);
+        return <B key={i} p={[x, (y1 + top) / 2, z]} s={[0.05, top - y1, 0.06]} m={M.trim} />;
+      })}
     </group>
   );
 }
@@ -164,8 +189,12 @@ export function Shell() {
         {/* Side walls */}
         <WZ name="wall-left-kitchen" z1={-6} z2={2} x={-9} y2={H + 0.012} m={M.wallKitchen} />
         <WZ name="wall-left-siding" z1={-6.1} z2={2.1} x={-9.14} y2={H - 0.025} m={M.siding} />
-        <WZ name="wall-right-bath" z1={-6} z2={-2.8} x={6} y2={H + 0.012} m={M.wallBath} />
-        <WZ name="wall-right-utility" z1={-2.8} z2={2} x={6} y2={H + 0.012} m={M.wallUtility} />
+        {/* Where the garage roof sweeps down over this wall at both eaves, the wall
+            stops just under the roof so its top never pokes through the shingles. */}
+        <WZ name="wall-right-bath" z1={-5.6} z2={-2.8} x={6} y2={H + 0.012} m={M.wallBath} />
+        <WZ name="wall-right-bath-eave" z1={-6} z2={-5.6} x={6} y2={3.0} m={M.wallBath} />
+        <WZ name="wall-right-utility" z1={-2.8} z2={1.6} x={6} y2={H + 0.012} m={M.wallUtility} />
+        <WZ name="wall-right-utility-eave" z1={1.6} z2={2} x={6} y2={3.0} m={M.wallUtility} />
 
         {/* Partitions */}
         <WZ
@@ -212,11 +241,12 @@ export function Shell() {
       {/* Glass stays out of the merged batch so it never casts a shadow into the rooms. */}
       {/* see-in glass front wall above the knee walls, and a clear glass ceiling */}
       <GlassFront x1={-9} x2={0.2} z={2} y1={0.75} y2={H} />
-      <GlassFront x1={2} x2={6} z={2} y1={0.75} y2={H} />
+      <GlassFront x1={2} x2={6} z={2} y1={0.75} y2={H} clip={{ x: 5.7, y: 3.0 }} />
       <B
         name="glass-ceiling"
-        p={[-1.5, H + 0.01, -2]}
-        s={[15.1, 0.02, 8.1]}
+        // stops at the garage eave (x 5.72) so its edge never shows through the garage roof
+        p={[-1.665, H + 0.01, -2]}
+        s={[14.77, 0.02, 8.1]}
         m={GLASS_ROOF}
         cast={false}
       />
