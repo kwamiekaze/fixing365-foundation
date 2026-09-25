@@ -288,7 +288,8 @@ function Door({ x, z, pal, width = 1 }: { x: number; z: number; pal: Palette; wi
   const trim = mat(pal.trim, 0.6);
   return (
     <group position={[x, 0, z]}>
-      <B p={[0, 1.1, 0.01]} s={[width + 0.1, 2.2, 0.04]} m={DOORWAY} cast={false} />
+      {/* stands 1.5 cm proud of the foundation stone so the two faces never fight */}
+      <B p={[0, 1.1, 0.025]} s={[width + 0.1, 2.2, 0.04]} m={DOORWAY} cast={false} />
       <B
         p={[0.2, 1.08, 0.3]}
         r={[0, -0.9, 0]}
@@ -379,6 +380,12 @@ function Landscaping({
 }
 
 type Style = "ranch" | "colonial" | "cape" | "craftsman";
+const SIZES: Record<Style, { w: number; d: number; h: number; rise: number }> = {
+  ranch: { w: 8.2, d: 7.2, h: 2.9, rise: 1.8 },
+  colonial: { w: 9.4, d: 7.4, h: 5.7, rise: 2.4 },
+  cape: { w: 9, d: 7.2, h: 2.7, rise: 3.4 },
+  craftsman: { w: 9.2, d: 6.4, h: 3.2, rise: 2.5 },
+};
 export interface HouseSpec {
   x: number;
   z: number;
@@ -393,13 +400,7 @@ function House({ x, z, face, seed, style }: HouseSpec) {
   const wall = wallMat(pal.wall);
   const trim = mat(pal.trim, 0.6);
   const roof = roofMat(pal.roof);
-  const sizes: Record<Style, { w: number; d: number; h: number; rise: number }> = {
-    ranch: { w: 8.2, d: 7.2, h: 2.9, rise: 1.8 },
-    colonial: { w: 9.4, d: 7.4, h: 5.7, rise: 2.4 },
-    cape: { w: 9, d: 7.2, h: 2.7, rise: 3.4 },
-    craftsman: { w: 9.2, d: 6.4, h: 3.2, rise: 2.5 },
-  };
-  const { w, d, h, rise } = sizes[style];
+  const { w, d, h, rise } = SIZES[style];
   const f = d / 2;
   const walkX = style === "colonial" ? 0 : -0.9;
   return (
@@ -607,4 +608,35 @@ export function Neighborhood() {
       </StaticBatch>
     </>
   );
+}
+
+/**
+ * Ground rects [x1, z1, x2, z2] the grass must stay off for every neighbor:
+ * the footprint (garage wing, portico or porch included), driveway, paver
+ * walk and mulch beds. Worked out from the same numbers House and
+ * Landscaping build with, so grass never grows through a drive or path.
+ */
+export function neighborGrassAvoid(): [number, number, number, number][] {
+  const pad = 0.15;
+  return NEIGHBOR_HOMES.flatMap(({ x, z, face, style }) => {
+    const { w, d } = SIZES[style];
+    const f = d / 2;
+    const walkX = style === "colonial" ? 0 : -0.9;
+    const front = style === "craftsman" ? f + 1.6 : f;
+    const local: [number, number, number, number][] = [
+      [-w / 2 - 0.05, -f - 0.05, w / 2 + (style === "ranch" ? 3.4 : 0.05), f + 0.05],
+      [w / 2 - 2.6, f, w / 2, front + 3.4],
+      [walkX - 0.6, f, walkX + 0.64, front + 3.03],
+      [walkX - w * 0.44 - 0.6, front + 0.1, walkX + w * 0.44 + 0.6, front + 1.0],
+    ];
+    if (style === "colonial") local.push([-1.1, f, 1.1, f + 1.65]);
+    if (style === "craftsman") local.push([-w / 2 + 0.3, f, w / 2 - 0.3, f + 1.6]);
+    const s = face ? -1 : 1;
+    return local.map(([a, b, c, e]): [number, number, number, number] => [
+      Math.min(x + a * s, x + c * s) - pad,
+      Math.min(z + b * s, z + e * s) - pad,
+      Math.max(x + a * s, x + c * s) + pad,
+      Math.max(z + b * s, z + e * s) + pad,
+    ]);
+  });
 }

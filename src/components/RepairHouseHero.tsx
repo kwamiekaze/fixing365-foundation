@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSceneGestures } from "./useSceneGestures";
 import { Link } from "@tanstack/react-router";
-import { RotateCcw, Rows3, ScanEye, ScanSearch } from "lucide-react";
+import { Check, RotateCcw, Rows3, ScanEye, ScanSearch, Square } from "lucide-react";
 import { Button } from "./ui/button";
 import { LoadingScreen } from "./LoadingScreen";
 import { Fallback2D } from "./Fallback2D";
@@ -9,6 +9,7 @@ import { ServicePanel } from "./ServicePanel";
 import { getZone, spotsForZone, zones, type ZoneId } from "@/config/world";
 import { supportsWebGL } from "@/lib/webgl";
 import { useWorld, world } from "@/three/world/store";
+import { stopShowcase } from "@/three/world/showcase";
 
 const Scene = lazyWithRetry(() => import("@/three/Scene"));
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
@@ -26,6 +27,8 @@ export function RepairHouseHero() {
   const card = useWorld((s) => s.card);
   const touring = useWorld((s) => s.touring);
   const caption = useWorld((s) => s.tourCaption);
+  const showcase = useWorld((s) => s.showcase);
+  const reel = useWorld((s) => s.showcaseCaption);
   const showIntro = !explored && !touring;
 
   useEffect(() => {
@@ -69,10 +72,12 @@ export function RepairHouseHero() {
         className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-64 bg-gradient-to-b from-panel-strong/90 to-transparent transition-opacity duration-500 ${showIntro ? "opacity-100" : "opacity-50"}`}
       />
 
-      {explored && !touring && current && (
-        <div className="pointer-events-none absolute left-5 top-16 z-20 md:left-10 md:top-8">
-          <p className="font-display text-xl font-bold md:text-2xl">{current.name}</p>
-          <p className="mt-1 max-w-[14rem] text-xs text-foreground/70 md:max-w-xs md:text-sm">
+      {explored && !touring && showcase === "off" && current && (
+        <div className="pointer-events-none absolute left-4 top-3 z-20 max-w-[12.5rem] md:left-10 md:top-5 md:max-w-xs">
+          <p className="font-display text-xl font-bold leading-tight md:text-2xl">
+            {current.id === "house" ? "What’s your fix?" : current.name}
+          </p>
+          <p className="mt-1 text-xs leading-snug text-foreground/70 md:text-sm">
             {xray ? "X-Ray: see the systems hidden inside the walls." : current.blurb}
           </p>
         </div>
@@ -124,9 +129,57 @@ export function RepairHouseHero() {
         </div>
       )}
 
+      {showcase !== "off" && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-30 px-5 md:bottom-10 md:px-10">
+          <div className="flex items-end justify-between gap-4">
+            <div aria-live="polite" className="min-w-0 max-w-2xl">
+              {reel && (
+                <div key={`${reel.title}-${reel.done ? 1 : 0}`} className="tour-caption">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary drop-shadow-[0_1px_6px_rgba(0,0,0,.7)] md:text-sm">
+                    {reel.kicker}
+                  </p>
+                  <p className="mt-1 font-display text-2xl font-bold leading-tight text-balance drop-shadow-[0_2px_14px_rgba(0,0,0,.75)] md:text-4xl">
+                    {reel.title}
+                  </p>
+                  {reel.done && (
+                    <p className="fixed-stamp mt-2 inline-flex items-center gap-1.5 rounded-full bg-success px-3 py-1 text-xs font-bold text-background md:text-sm">
+                      <Check className="size-3.5" /> Fixed
+                    </p>
+                  )}
+                </div>
+              )}
+              {reel?.step && (
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="h-1 w-40 overflow-hidden rounded-full bg-foreground/20 md:w-64">
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
+                      style={{
+                        width: `${((reel.step[0] - (reel.done ? 0 : 1)) / reel.step[1]) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs font-bold tabular-nums text-foreground/75">
+                    {reel.step[0]} / {reel.step[1]}
+                  </span>
+                </div>
+              )}
+            </div>
+            <Button
+              variant="inverse"
+              size="sm"
+              className="pointer-events-auto shrink-0"
+              onClick={() => stopShowcase()}
+            >
+              <Square className="fill-current" />
+              Stop
+            </Button>
+          </div>
+        </div>
+      )}
+
       {!useSimple && (
         <div
-          className={`absolute inset-x-0 bottom-24 z-20 px-3 md:bottom-5 md:px-6 ${(spot && card === "compact") || touring ? "hidden" : spot && card === "full" ? "max-md:hidden" : ""}`}
+          className={`absolute inset-x-0 bottom-24 z-20 px-3 md:bottom-5 md:px-6 ${(spot && card === "compact") || touring || showcase !== "off" ? "hidden" : spot && card === "full" ? "max-md:hidden" : ""}`}
         >
           <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col gap-2">
             <div className="flex items-center gap-2">

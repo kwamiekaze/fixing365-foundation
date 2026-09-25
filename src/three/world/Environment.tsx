@@ -1,5 +1,5 @@
 import { StaticBatch } from "./StaticBatch";
-import { NEIGHBOR_HOMES, Neighborhood } from "./Neighborhood";
+import { Neighborhood, neighborGrassAvoid } from "./Neighborhood";
 import { Neighbors } from "./Npcs";
 import { ServiceVanDetailed } from "./ServiceVan";
 import { GrassField, RealisticTrees, type TreeSpec } from "./Foliage";
@@ -24,18 +24,7 @@ const GRASS_AVOID: [number, number, number, number][] = [
   [-0.7, 2, 2.9, 4.4],
   [-200, 4.05, 200, 14],
   [-11, -5, -9.4, -3.4],
-  ...NEIGHBOR_HOMES.flatMap(({ x, z, face }): [number, number, number, number][] => {
-    const f = face ? -1 : 1;
-    return [
-      [x - 7.8, z - 4.4, x + 7.8, z + 4.4],
-      [
-        Math.min(x + 3 * f, x + 5.5 * f),
-        Math.min(z + 3.4 * f, z + 8.5 * f),
-        Math.max(x + 3 * f, x + 5.5 * f),
-        Math.max(z + 3.4 * f, z + 8.5 * f),
-      ],
-    ];
-  }),
+  ...neighborGrassAvoid(),
 ];
 import { Environment as DreiEnv, Lightformer, Sparkles } from "@react-three/drei";
 import { useLayoutEffect, useMemo, useRef } from "react";

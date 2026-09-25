@@ -21,7 +21,9 @@ function BaseCabinets() {
       ))}
       {/* countertop with sink cutout faked by separate pieces */}
       <B p={[-8.3, 0.93, CAB_Z + 0.02]} s={[1.2, 0.05, 0.68]} m={M.counter} />
-      <B p={[-5.05, 0.93, CAB_Z + 0.02]} s={[1.9, 0.05, 0.68]} m={M.counter} />
+      {/* right run split around the range so the cooktop is never buried in the counter */}
+      <B p={[-5.84, 0.93, CAB_Z + 0.02]} s={[0.32, 0.05, 0.68]} m={M.counter} />
+      <B p={[-4.51, 0.93, CAB_Z + 0.02]} s={[0.82, 0.05, 0.68]} m={M.counter} />
       <B p={[-7.2, 0.93, CAB_Z - 0.26]} s={[0.9, 0.05, 0.16]} m={M.counter} />
       <B p={[-7.2, 0.93, CAB_Z + 0.3]} s={[0.9, 0.05, 0.08]} m={M.counter} />
       {/* backsplash */}
@@ -39,7 +41,7 @@ function BaseCabinets() {
             [0.18, 0.14],
           ] as [number, number][]
         ).map(([x, z], i) => (
-          <C key={i} p={[x, 0.95, z]} radius={0.09} h={0.01} m={M.darkMetal} />
+          <C key={i} p={[x, 0.951, z]} radius={0.09} h={0.008} m={M.darkMetal} />
         ))}
       </group>
       {/* upper cabinets and hood */}

@@ -27,6 +27,10 @@ body { margin:0; background:var(--background); color:var(--foreground); font-fam
 .spot-card-in { animation: spot-card-in .45s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes tour-caption-in { from{transform:translateY(10px);opacity:0;filter:blur(4px)} to{transform:none;opacity:1;filter:none} }
 .tour-caption { animation: tour-caption-in .9s cubic-bezier(.2,.8,.2,1) both; transition: opacity .6s ease; }
+@keyframes play-ring { 0%{transform:scale(1);opacity:.7} 100%{transform:scale(1.55);opacity:0} }
+.play-fixes-ring { animation: play-ring 2.2s cubic-bezier(.2,.7,.3,1) infinite; }
+@keyframes fixed-stamp { 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.12);opacity:1} 100%{transform:scale(1)} }
+.fixed-stamp { animation: fixed-stamp .5s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important} }
 .splash { transition: opacity .45s ease, transform .45s ease, filter .45s ease; }
 .splash-leave { opacity:0; transform:scale(1.03); filter:blur(6px); pointer-events:none; }

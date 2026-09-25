@@ -205,11 +205,7 @@ function DrywallHole() {
         <S p={[-0.05, 0.95, 0.78]} radius={0.035} m={M.chrome} />
         <S p={[0.05, 0.95, 0.78]} radius={0.035} m={M.chrome} />
       </group>
-      {fixed ? (
-        <group name="obj-door-stop">
-          <C p={[1.6, 0.09, -2.7]} radius={0.025} h={0.1} r={[0, 0, Math.PI / 2]} m={M.chrome} />
-        </group>
-      ) : (
+      {!fixed && (
         <group name="obj-drywall-hole">
           <mesh position={[1.915, 0.95, -2.62]} rotation={[0, -Math.PI / 2, 0]} material={hole}>
             <circleGeometry args={[0.13, 9]} />

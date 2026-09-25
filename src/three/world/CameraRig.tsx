@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { getSpot, getZone, homeView, tour, type CameraView } from "@/config/world";
 import { resetRigInput, rigInput, rigState, useWorld, world } from "./store";
+import { ORBIT_S, stopShowcase } from "./showcase";
 
 /** Seconds without a tap, scroll or key before the cinematic tour starts. */
 const IDLE_TOUR_S =
@@ -43,7 +44,7 @@ function framed(view: CameraView, aspect: number, close = false) {
   return { position: target.clone().add(offset.multiplyScalar(k)), target, fov: BASE_FOV };
 }
 
-type Mode = "fly" | "hold" | "free" | "tour";
+type Mode = "fly" | "hold" | "free" | "tour" | "orbit";
 interface Leg {
   fromP: THREE.Vector3;
   fromT: THREE.Vector3;
@@ -84,6 +85,33 @@ function makeLeg(
     dur: flightDuration(fromP, toP),
     lift: Math.min(5, d * 0.2),
   };
+}
+
+/** Centre of the house, what the showcase drone circles. */
+const ORBIT_C = new THREE.Vector3(-1.6, 0.8, -2.0);
+const ORBIT_THETA0 = Math.atan2(homeView.position[0] - ORBIT_C.x, homeView.position[2] - ORBIT_C.z);
+/**
+ * The showcase drone shot: one continuous 360 around the finished house.
+ * It starts high and wide over the street, sinks and tightens as it sweeps
+ * round the back garden, then climbs out again for the reveal, with the
+ * look point leading a touch into the turn the way a drone pilot banks
+ * into a move. Tall screens fly the same line from further out.
+ */
+function orbitPose(u: number, aspect: number, outP: THREE.Vector3, outT: THREE.Vector3) {
+  const k = Math.min(1, Math.max(0, u));
+  const e = smootherstep(k) * 0.72 + k * 0.28;
+  const theta = ORBIT_THETA0 + Math.PI * 2 * e;
+  const arc = Math.sin(Math.PI * e);
+  const kA = aspect < 1.3 ? Math.min(1.55, Math.pow(1.3 / aspect, 0.6)) : 1;
+  const r = (21 - 6.5 * arc) * kA;
+  const h = (14 - 5.5 * arc) * Math.sqrt(kA) + Math.sin(e * Math.PI * 4) * 0.35;
+  outP.set(ORBIT_C.x + Math.sin(theta) * r, h, ORBIT_C.z + Math.cos(theta) * r);
+  // Keep clear of the rooftops across the street.
+  if (outP.z > 13) outP.y = Math.max(outP.y, 10.5);
+  outT.copy(ORBIT_C);
+  outT.y += 0.5 * arc;
+  outT.x += Math.cos(theta) * 1.6 * arc;
+  outT.z -= Math.sin(theta) * 1.6 * arc;
 }
 
 /** House footprint, used to cut away walls between the camera and a subject inside. */
@@ -140,6 +168,9 @@ export function CameraRig() {
     tourPhase: "enter" as "enter" | "hold" | "travel",
     tourPhaseStart: 0,
     tourLeg: null as Leg | null,
+    orbitStart: 0,
+    orbitFromP: new THREE.Vector3(),
+    orbitFromT: new THREE.Vector3(),
     look: new THREE.Vector3().fromArray(homeView.target),
     fov: BASE_FOV,
     baseP: new THREE.Vector3().fromArray(homeView.position),
@@ -162,7 +193,7 @@ export function CameraRig() {
 
   // A new view (spot, zone or Back) is the only thing that moves the camera.
   useEffect(() => {
-    if (world.get().touring) return;
+    if (world.get().touring || world.get().showcase === "orbit") return;
     const s = st.current;
     resetRigInput();
     if (world.get().reduced) {
@@ -205,6 +236,7 @@ export function CameraRig() {
     const mark = () => {
       rigInput.lastInput = now();
       stopTour();
+      stopShowcase();
     };
     const opts = { passive: true } as const;
     window.addEventListener("pointerdown", mark, opts);
@@ -239,7 +271,7 @@ export function CameraRig() {
     const w = world.get();
     const wide = aspect > 1.2;
     const want = { x: 0, y: 0 };
-    if (!w.touring) {
+    if (!w.touring && w.showcase === "off") {
       if (w.spot && w.card === "full" && wide) want.x = size.width * 0.19;
       else if (w.spot && w.card === "full") want.y = size.height * 0.2;
       else if (w.spot === "welcome" && w.card === "compact" && wide) want.x = -size.width * 0.12;
@@ -277,12 +309,36 @@ export function CameraRig() {
       idle &&
       !reading &&
       !i.dragging &&
-      heroVisible
+      heroVisible &&
+      w.showcase === "off"
     )
       startTour(t);
 
+    // Showcase drone orbit: take over from wherever the last fix left the camera.
+    if (w.showcase === "orbit" && s.mode !== "orbit") {
+      resetRigInput();
+      s.mode = "orbit";
+      s.orbitStart = t;
+      s.orbitFromP.copy(s.baseP);
+      s.orbitFromT.copy(s.baseT);
+      s.fov = BASE_FOV;
+    } else if (s.mode === "orbit" && w.showcase !== "orbit") {
+      enterHold(camera.position.clone(), s.look.clone());
+    }
+
     // 1. Where the shot wants to be before the visitor's gestures.
-    if (s.mode === "fly" && s.leg) {
+    if (s.mode === "orbit") {
+      const e = t - s.orbitStart;
+      orbitPose(e / ORBIT_S, aspect, P, T);
+      // Ease out of the last close-up and into the orbit line, rising as it goes.
+      const blend = w.reduced ? 1 : smootherstep(e / 4.2);
+      if (blend < 1) {
+        const lift = Math.sin(Math.PI * blend) * 2.5;
+        P.lerpVectors(s.orbitFromP, P, blend);
+        P.y += lift;
+        T.lerpVectors(s.orbitFromT, T, blend);
+      }
+    } else if (s.mode === "fly" && s.leg) {
       const k = sampleLeg(s.leg, t, P, T);
       if (k >= 1) enterHold(s.leg.toP, s.leg.toT);
     } else if (s.mode === "tour") {
@@ -330,6 +386,7 @@ export function CameraRig() {
     }
     s.baseP.copy(P);
     s.baseT.copy(T);
+    rigState.mode = s.mode;
 
     // 2. The visitor's gestures on top: full 360 orbit, tilt and zoom.
     off.copy(P).sub(T);
@@ -354,7 +411,9 @@ export function CameraRig() {
 
     // 3. Ease the real camera onto it, so drags glide rather than snap.
     const touchFirst = size.width < 768;
-    const k = w.reduced ? 1 : 1 - Math.exp(-(s.mode === "tour" ? 9 : touchFirst ? 8 : 5.5) * dt);
+    const k = w.reduced
+      ? 1
+      : 1 - Math.exp(-(s.mode === "tour" || s.mode === "orbit" ? 9 : touchFirst ? 8 : 5.5) * dt);
     camera.position.lerp(desired, k);
     s.look.lerp(T, k);
     camera.lookAt(s.look);

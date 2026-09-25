@@ -10,6 +10,7 @@ import {
   ArrowUpRight,
   Minus,
   ShieldCheck,
+  Play,
   Sparkles,
   Wrench,
   X,
@@ -17,6 +18,7 @@ import {
 import { getService } from "@/config/services";
 import { getSpot, stepSpot } from "@/config/world";
 import { useWorld, world } from "@/three/world/store";
+import { startShowcase } from "@/three/world/showcase";
 import { Button } from "./ui/button";
 import { SLOGAN } from "@/config/brand";
 import { AllServicesDrawer } from "./AllServicesDrawer";
@@ -109,6 +111,25 @@ export function TellUsLink({
   );
 }
 
+/** Plays the whole house being fixed, then the drone orbit. */
+function PlayFixes() {
+  return (
+    <button
+      type="button"
+      onClick={() => void startShowcase()}
+      aria-label="Play: watch every fix, start to finish"
+      title="Watch every fix"
+      className="play-fixes group relative grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_24px_-6px] shadow-primary/70 transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+    >
+      <span
+        aria-hidden
+        className="play-fixes-ring pointer-events-none absolute inset-0 rounded-full border-2 border-primary"
+      />
+      <Play className="ml-0.5 size-5 fill-current" />
+    </button>
+  );
+}
+
 /** Welcome card, the first thing a visitor sees, like the KleanupCrew office. */
 function WelcomeCard({ full }: { full: boolean }) {
   if (!full)
@@ -136,19 +157,22 @@ function WelcomeCard({ full }: { full: boolean }) {
           Scroll or swipe up to fix the whole house, one problem at a time. Or tap anything broken
           to jump straight to it.
         </p>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button asChild variant="hero" size="sm">
-            <TellUsLink />
-          </Button>
-          <Button
-            variant="inverse"
-            size="sm"
-            onClick={() => world.setCard("full")}
-            aria-haspopup="dialog"
-          >
-            More info <ArrowUpRight />
-          </Button>
-          <AllServicesDrawer />
+        <div className="mt-4 flex items-end gap-3">
+          <div className="flex flex-1 flex-wrap items-center gap-2">
+            <Button asChild variant="hero" size="sm">
+              <TellUsLink />
+            </Button>
+            <Button
+              variant="inverse"
+              size="sm"
+              onClick={() => world.setCard("full")}
+              aria-haspopup="dialog"
+            >
+              More info <ArrowUpRight />
+            </Button>
+            <AllServicesDrawer />
+          </div>
+          <PlayFixes />
         </div>
       </section>
     );

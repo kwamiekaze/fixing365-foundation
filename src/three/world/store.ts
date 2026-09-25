@@ -21,6 +21,19 @@ export interface WorldState {
   viewNonce: number;
   /** performance.now() when the scroll story last fixed something, for the camera push-in. */
   fixedAt: number;
+  /** Play-the-fix showcase from the welcome card: fixing every problem in turn, then the drone orbit. */
+  showcase: "off" | "fixing" | "orbit";
+  /** Lower-third caption shown while the showcase plays. */
+  showcaseCaption: ShowcaseCaption | null;
+}
+
+export interface ShowcaseCaption {
+  kicker: string;
+  title: string;
+  /** True once the problem on screen has been fixed. */
+  done?: boolean;
+  /** 1-based position and total, for the progress bar. */
+  step?: [number, number];
 }
 
 let state: WorldState = {
@@ -35,6 +48,8 @@ let state: WorldState = {
   tourCaption: null,
   viewNonce: 0,
   fixedAt: 0,
+  showcase: "off",
+  showcaseCaption: null,
 };
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -119,7 +134,12 @@ if (typeof window !== "undefined" && new URLSearchParams(window.location.search)
  */
 export const rigInput = { dragX: 0, dragY: 0, zoom: 0, dragging: false, lastInput: 0 };
 /** What the camera is looking at right now. Streaming reads this. */
-export const rigState = { target: new THREE.Vector3(1, 0.3, -1.8), cutaway: false };
+export const rigState = {
+  /** Camera rig mode, read by the showcase director to know when a move has landed. */
+  mode: "hold" as string,
+  target: new THREE.Vector3(1, 0.3, -1.8),
+  cutaway: false,
+};
 export function resetRigInput() {
   rigInput.dragX = 0;
   rigInput.dragY = 0;

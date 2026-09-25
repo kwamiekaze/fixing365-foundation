@@ -52,7 +52,7 @@ export const zones: ZoneConfig[] = [
     id: "house",
     name: "The House",
     short: "House",
-    blurb: "Kitchen, living room, bath, utility room, garage and yard.",
+    blurb: "Kitchen, living room, bath, utility room, garage, yard and much more.",
     center: [1, 0, -1.5],
     loadRadius: 22,
     view: homeView,
@@ -429,7 +429,9 @@ export const SPOT_ORDER = [
   "washer-e21",
   "breaker-panel",
   "smoke-detector",
+  "water-heater",
   "garage-door",
+  "roof-gutter",
   "ev-charger",
 ];
 const orderOf = (id: string) => {

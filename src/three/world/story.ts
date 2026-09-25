@@ -1,5 +1,6 @@
 import { getSpot, spotsForZone } from "@/config/world";
 import { world } from "./store";
+import { showcaseRunning, stopShowcase } from "./showcase";
 
 /**
  * Scroll story: each step forward either fixes the problem on screen or,
@@ -8,6 +9,8 @@ import { world } from "./store";
  * welcome view with the whole house fixed. Backward steps undo fixes.
  */
 export function storyStep(dir: 1 | -1) {
+  // A scroll or swipe during the Play showcase hands control back instead.
+  if (showcaseRunning()) return stopShowcase();
   const w = world.get();
   const id = w.spot ?? "welcome";
   const spot = getSpot(id);
