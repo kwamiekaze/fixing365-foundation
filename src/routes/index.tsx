@@ -1,3 +1,3 @@
 import { createFileRoute } from "@tanstack/react-router"; import { IndexPage } from "@/pages/Index";
-const OG_IMAGE="https://fixing365.com/__l5e/assets-v1/dc5511bf-bee8-4205-8175-d587722d1cce/fixing365-social.jpg";
+const OG_IMAGE="https://fixing365.com/__l5e/assets-v1/f0319f02-1a87-458c-af76-bd9f6f8afa55/fixing365-social-v2.jpg";
 export const Route=createFileRoute("/")({ssr:false,head:()=>({meta:[{title:"Fixing365 | Get Your Fix"},{name:"description",content:"Get your fix."},{property:"og:title",content:"Fixing365 | Get Your Fix"},{property:"og:description",content:"Get your fix."},{property:"og:type",content:"website"},{property:"og:image",content:OG_IMAGE},{name:"twitter:card",content:"summary_large_image"},{name:"twitter:image",content:OG_IMAGE}]}),component:IndexPage});
