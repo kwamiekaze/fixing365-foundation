@@ -278,4 +278,4 @@ export function useClockHour() {
   return h;
 }
 /** After 7 PM and before sunrise: street lights on, neighbors inside. */
-export const isEvening = (hour: number) => hour >= 19 || hour < 6.5;
+export const isEvening = (hour: number) => hour >= 19 || hour < 7;

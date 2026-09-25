@@ -29,6 +29,7 @@ const TITLES: Record<OverlayId, [string, string]> = {
   ],
   how: ["How it works", "Three steps from broken to fixed."],
   providers: ["For providers", "Get matched with local jobs that fit your trade and credentials."],
+  portal: ["Portal", "One place for customers and providers to keep every fix on track."],
   about: [
     "About Fixing365",
     "One place to start when something in your home or property is broken.",
@@ -135,6 +136,34 @@ function Body({ id, category, problem }: { id: OverlayId; category: string; prob
           </Button>
         </>
       );
+    case "portal":
+      return (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-lg border border-white/15 bg-background/40 p-4">
+            <p className="font-display text-base font-bold">Customers</p>
+            <p className="mt-1 text-sm leading-6 text-foreground/80">
+              Track your requests, compare quotes, message your provider and keep photos and
+              receipts for every fix in one place.
+            </p>
+            <Button variant="hero" className="mt-4" onClick={() => openRequest()}>
+              <Camera /> Start a request
+            </Button>
+          </div>
+          <div className="rounded-lg border border-white/15 bg-background/40 p-4">
+            <p className="font-display text-base font-bold">Providers</p>
+            <p className="mt-1 text-sm leading-6 text-foreground/80">
+              See matched jobs, send quotes, manage your schedule and complete identity, insurance,
+              license and background checks.
+            </p>
+            <Button variant="inverse" className="mt-4" onClick={() => overlays.open("providers")}>
+              Provider details <ArrowRight />
+            </Button>
+          </div>
+          <p className="text-xs leading-5 text-foreground/80 md:col-span-2">
+            Account sign-in is on the way. Until then, requests are handled by phone and email.
+          </p>
+        </div>
+      );
     case "about":
       return (
         <>
@@ -214,7 +243,7 @@ export function OverlayHost() {
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="overlay-fade fixed inset-0 z-[60] bg-background/15" />
         <DialogPrimitive.Content
-          className="overlay-rise fixed inset-x-3 bottom-3 top-20 z-[61] mx-auto flex max-w-3xl flex-col overflow-hidden rounded-xl border border-white/15 bg-panel/55 shadow-2xl backdrop-blur-md md:inset-x-8 md:bottom-8 md:top-24"
+          className="overlay-rise fixed inset-x-3 bottom-3 top-20 z-[61] mx-auto flex max-w-3xl flex-col overflow-hidden glass-card rounded-xl md:inset-x-8 md:bottom-8 md:top-24"
           aria-describedby={undefined}
         >
           {id && (

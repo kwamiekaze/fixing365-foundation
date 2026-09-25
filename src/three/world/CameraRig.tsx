@@ -143,7 +143,7 @@ export function CameraRig() {
             spot.view,
             aspect,
             spot.zone === "house" &&
-              spot.area !== "Exterior" &&
+              (spot.area !== "Exterior" || Boolean(spot.tight)) &&
               spot.area !== "Welcome" &&
               !spot.xray,
           )

@@ -7,16 +7,22 @@ import { openRequest, overlays, type OverlayId } from "./overlays/store";
 /** Every section opens as a see-through pop-up over the 3D scene, never a new page. */
 const links: [OverlayId, string][] = [
   ["services", "Services"],
-  ["how", "How It Works"],
-  ["providers", "For Providers"],
+  ["portal", "Portal"],
   ["about", "About"],
   ["help", "Get Help"],
 ];
 
-export function Header() {
+/** On the homepage the header floats over the 3D scene as the same glass panel as the cards. */
+export function Header({ overlay = false }: { overlay?: boolean }) {
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-border/70 bg-panel backdrop-blur-xl">
+      <header
+        className={
+          overlay
+            ? "glass-card absolute inset-x-0 top-0 z-50 rounded-none border-x-0 border-t-0"
+            : "sticky top-0 z-50 border-b border-border/70 bg-panel backdrop-blur-xl"
+        }
+      >
         <div className="page-shell flex h-16 items-center justify-between">
           {/* The logo always reloads the homepage fresh, back to the welcome view. */}
           <a
@@ -58,7 +64,7 @@ export function Header() {
                 <Menu />
               </Button>
             </SheetTrigger>
-            <SheetContent className="border-border bg-panel-strong">
+            <SheetContent className="glass-card border-l">
               <SheetHeader>
                 <SheetTitle>
                   <Brand />

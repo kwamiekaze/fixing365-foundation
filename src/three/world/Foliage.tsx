@@ -262,7 +262,7 @@ export function RealisticTrees({ trees, seed = 1 }: { trees: TreeSpec[]; seed?: 
   const trunkRef = useRef<THREE.InstancedMesh>(null);
   const limbRef = useRef<THREE.InstancedMesh>(null);
   const leafRef = useRef<THREE.InstancedMesh>(null);
-  const cards = isMobile() ? 40 : 70;
+  const cards = isMobile() ? 64 : 120;
   const limbs = 4;
 
   const mats = useMemo(() => {
@@ -282,7 +282,7 @@ export function RealisticTrees({ trees, seed = 1 }: { trees: TreeSpec[]; seed?: 
     trunk.translate(0, 0.5, 0);
     const limb = new THREE.CylinderGeometry(0.03, 0.07, 1, 6);
     limb.translate(0, 0.5, 0);
-    return { trunk, limb, card: new THREE.PlaneGeometry(1.7, 1.7) };
+    return { trunk, limb, card: new THREE.PlaneGeometry(1.25, 1.25) };
   }, []);
 
   useLayoutEffect(() => {
@@ -305,23 +305,36 @@ export function RealisticTrees({ trees, seed = 1 }: { trees: TreeSpec[]; seed?: 
         limbRef.current!.setMatrixAt(ti * limbs + l, o.matrix);
       }
       const cy = trunkH + 1.2 * s;
+      // The crown is a cluster of leafy lobes, like a real canopy, not one
+      // ball. Each card faces outward from its lobe with a random roll, so
+      // the silhouette is broken and full from every angle.
+      const lobes: THREE.Vector3[] = [new THREE.Vector3(0, 0.55 * s, 0)];
+      for (let l = 0; l < 5; l++) {
+        const a = (l / 5) * Math.PI * 2 + r() * 0.8;
+        lobes.push(
+          new THREE.Vector3(Math.cos(a) * 1.05 * s, (r() - 0.35) * 0.7 * s, Math.sin(a) * 1.05 * s),
+        );
+      }
+      const out = new THREE.Vector3();
       for (let k = 0; k < cards; k++) {
-        // Cards fill an irregular, slightly flattened crown; outer cards are
-        // brighter so the canopy has a lit top and a shaded underside.
+        const lobe = lobes[k % lobes.length]!;
         const u = r() * Math.PI * 2;
         const v = Math.acos(2 * r() - 1);
-        const rad = Math.pow(r(), 0.4);
-        const px = Math.sin(v) * Math.cos(u) * 1.75 * s * rad;
-        const py = Math.cos(v) * 1.35 * s * rad;
-        const pz = Math.sin(v) * Math.sin(u) * 1.75 * s * rad;
+        const rad = 0.35 + Math.pow(r(), 0.5) * 0.75;
+        out.set(Math.sin(v) * Math.cos(u), Math.cos(v) * 0.85, Math.sin(v) * Math.sin(u));
+        const px = lobe.x + out.x * rad * s;
+        const py = lobe.y + out.y * rad * s;
+        const pz = lobe.z + out.z * rad * s;
         o.position.set(x + px, cy + py, z + pz);
-        o.rotation.set(r() * Math.PI, r() * Math.PI, r() * Math.PI);
-        const sc = s * (0.8 + r() * 0.5);
+        o.lookAt(x + px + out.x, cy + py + out.y, z + pz + out.z);
+        o.rotateZ(r() * Math.PI * 2);
+        o.rotateX((r() - 0.5) * 0.9);
+        const sc = s * (0.75 + r() * 0.55);
         o.scale.set(sc, sc, sc);
         o.updateMatrix();
         const i = ti * cards + k;
         leafRef.current!.setMatrixAt(i, o.matrix);
-        const light = 0.72 + (py / (1.35 * s) + 1) * 0.2 + r() * 0.1;
+        const light = 0.58 + (py / (1.6 * s) + 1) * 0.2 + rad * 0.14 + r() * 0.08;
         col.setRGB(light * (0.92 + r() * 0.1), light, light * (0.85 + r() * 0.1));
         leafRef.current!.setColorAt(i, col);
       }

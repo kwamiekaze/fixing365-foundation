@@ -43,6 +43,8 @@ export interface SpotConfig {
   view: CameraView;
   /** Only shown while X-Ray mode is on. */
   xray?: boolean;
+  /** Close-up even though it is outdoors: phones widen the lens instead of pulling back. */
+  tight?: boolean;
 }
 
 export const homeView: CameraView = { position: [13.5, 15, 24], target: [1.2, 0.2, -1.8] };
@@ -277,7 +279,7 @@ export const spots: SpotConfig[] = [
     fix: "A pro replaces smoke and CO detectors, interconnects them and tests every alarm.",
     related: ["Smoke & CO detectors", "Leak sensors", "Smart home setup"],
     marker: [5.5, 3.5, -2.55],
-    view: v([3.4, 2.5, 1.4], [5.4, 2.8, -2.7]),
+    view: v([5.25, 2.5, -0.8], [5.25, 2.72, -2.7]),
   },
   // Exterior
   {
@@ -291,6 +293,7 @@ export const spots: SpotConfig[] = [
     fix: "A pro installs the lock, wires or mounts the doorbell and connects both to your Wi-Fi and phone.",
     related: ["Video doorbells", "Smart locks", "Security cameras", "Lock rekeying"],
     marker: [1.1, 2.9, 2.4],
+    tight: true,
     view: v([3.8, 2.3, 7.6], [1.2, 1.3, 2.1]),
   },
   {
@@ -477,7 +480,7 @@ const spotStop = (id: string, hold = 3.2): TourStop => {
     caption: s.title,
     view: s.view,
     hold,
-    close: s.zone === "house" && s.area !== "Exterior",
+    close: s.zone === "house" && (s.area !== "Exterior" || Boolean(s.tight)),
   };
 };
 export const tour: TourStop[] = [

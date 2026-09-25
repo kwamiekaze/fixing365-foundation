@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
  * Site-wide pop-ups, KleanupCrew style: every section and the request form
  * opens as a see-through panel over the 3D scene instead of a new page.
  */
-export type OverlayId = "request" | "services" | "how" | "providers" | "about" | "help";
+export type OverlayId = "request" | "services" | "how" | "providers" | "portal" | "about" | "help";
 export interface OverlayState {
   open: OverlayId | null;
   category: string;

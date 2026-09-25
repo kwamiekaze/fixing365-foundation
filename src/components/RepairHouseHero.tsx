@@ -52,7 +52,7 @@ export function RepairHouseHero() {
 
   return (
     <section
-      className="relative min-h-0 flex-1 overflow-hidden"
+      className="relative h-full overflow-hidden"
       aria-label="Interactive Fixing365 neighborhood"
     >
       <div
@@ -73,7 +73,7 @@ export function RepairHouseHero() {
       />
 
       {explored && !touring && showcase === "off" && current && (
-        <div className="pointer-events-none absolute left-4 top-3 z-20 max-w-[12.5rem] md:left-10 md:top-5 md:max-w-xs">
+        <div className="pointer-events-none absolute left-4 top-[5.1rem] z-20 max-w-[12.5rem] md:left-10 md:top-[5.5rem] md:max-w-xs">
           <p className="font-display text-xl font-bold leading-tight md:text-2xl">
             {current.id === "house" ? "What’s your fix?" : current.name}
           </p>
@@ -84,7 +84,7 @@ export function RepairHouseHero() {
       )}
 
       <div
-        className="pointer-events-auto absolute right-3 top-3 z-30 flex items-center gap-2 md:right-5 md:top-5"
+        className="pointer-events-auto absolute right-3 top-[4.9rem] z-30 flex items-center gap-2 md:right-5 md:top-[5.25rem]"
         aria-label="View options"
       >
         {!useSimple && (
@@ -105,7 +105,7 @@ export function RepairHouseHero() {
       </div>
 
       {streaming && (
-        <div className="pointer-events-none absolute left-1/2 top-24 z-20 -translate-x-1/2 rounded-full border border-border bg-panel px-4 py-2 text-xs font-bold backdrop-blur-md">
+        <div className="pointer-events-none absolute left-1/2 top-[9rem] z-20 -translate-x-1/2 rounded-full border border-border bg-panel px-4 py-2 text-xs font-bold backdrop-blur-md">
           Loading {current?.name ?? "area"} detail…
         </div>
       )}

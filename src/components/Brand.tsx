@@ -57,7 +57,7 @@ export function Brand({ compact = false }: { compact?: boolean }) {
         alt=""
         width={icon}
         height={icon}
-        className="shrink-0 rounded-[10px] drop-shadow-[0_0_10px_rgba(56,189,248,0.35)]"
+        className="shrink-0 drop-shadow-[0_0_10px_rgba(56,189,248,0.35)]"
         style={{ width: icon, height: icon }}
       />
       <span className="flex flex-col leading-none">
