@@ -42,7 +42,7 @@ export function SplashScreen() {
         disablePictureInPicture
         className="pointer-events-none h-full w-full object-cover"
       />
-      <div className="pointer-events-none absolute inset-x-0 flex justify-center bottom-[calc(18vh+env(safe-area-inset-bottom))]">
+      <div className="pointer-events-none absolute inset-x-0 flex justify-center bottom-[calc(7vh+env(safe-area-inset-bottom))]">
         <span className="splash-cta rounded-full px-8 py-3.5 text-sm font-medium uppercase tracking-[0.32em] text-foreground">
           Tap to continue
         </span>
