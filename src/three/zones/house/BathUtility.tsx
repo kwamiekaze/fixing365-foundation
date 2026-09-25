@@ -273,15 +273,6 @@ function Laundry() {
       {!fixed && (
         <group name="obj-suds-puddle">
           <C p={[3.0, 0.056, 0.75]} radius={0.55} h={0.006} seg={20} m={M.puddle} cast={false} />
-          {(
-            [
-              [2.82, 0.9],
-              [2.9, 0.6],
-              [3.1, 0.8],
-            ] as [number, number][]
-          ).map(([x, z], i) => (
-            <S key={i} p={[x, 0.07, z]} radius={0.06} m={M.suds} />
-          ))}
         </group>
       )}
     </Hotspot>

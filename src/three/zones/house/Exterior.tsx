@@ -1,4 +1,5 @@
 import { StaticBatch } from "../../world/StaticBatch";
+import { RoundedBox } from "@react-three/drei";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { B, C, M, S, Pipe, glow } from "../../world/kit";
@@ -220,35 +221,139 @@ function GarageDoor() {
   );
 }
 
+const evShell = new THREE.MeshStandardMaterial({
+  color: "#f3f4f5",
+  roughness: 0.28,
+  metalness: 0.02,
+});
+const evBack = new THREE.MeshStandardMaterial({ color: "#1a1c1f", roughness: 0.5 });
+const evRubber = new THREE.MeshStandardMaterial({ color: "#16181b", roughness: 0.62 });
+const evConduit = new THREE.MeshStandardMaterial({
+  color: "#8e959c",
+  roughness: 0.45,
+  metalness: 0.35,
+});
+
+/**
+ * Wall-mounted Level 2 charger, modelled on a modern unit: a soft white
+ * rounded shell on a slightly larger black back plate with visible screws,
+ * a status ring near the top, a holster on the right holding the
+ * connector, and its cable coiled round a round hanger below. Broken: no
+ * circuit run to it, the knockout at the bottom is capped, the ring glows
+ * amber and "No circuit" blinks. Fixed: grey conduit runs from the fitting
+ * down the siding to the ground with a strap clamp, and the ring glows teal.
+ * Local +z faces out from the garage wall; local +x is the viewer's right.
+ */
 function EvCharger() {
   const fixed = useFixed("ev-charger");
-  const ring = useMemo(() => glow("#3ddc84", 2.4), []);
-  const off = useMemo(() => glow("#ff9340", 1.2), []);
+  const ready = useMemo(() => glow("#3fe3d2", 2.6), []);
+  const amber = useMemo(() => glow("#ff9340", 1.6), []);
   return (
     <Hotspot id="ev-charger">
       <group name="obj-ev-charger" position={[GX2 + 0.1, 1.3, 0.6]} rotation={[0, Math.PI / 2, 0]}>
-        <B s={[0.36, 0.52, 0.12]} m={M.white} />
-        <mesh position={[0, 0.08, 0.062]} material={fixed ? ring : off}>
-          <ringGeometry args={[0.07, 0.09, 32]} />
-        </mesh>
-        <B p={[0.26, -0.1, 0.06]} s={[0.1, 0.16, 0.12]} m={M.black} name="obj-charger-holster" />
-        <mesh position={[0.28, -0.42, 0.14]} rotation={[Math.PI / 2, 0, 0]} material={M.black}>
-          <torusGeometry args={[0.16, 0.02, 6, 20]} />
-        </mesh>
-        {fixed ? (
-          <Pipe
-            a={[0, -0.26, 0]}
-            b={[0, -1.2, 0]}
-            radius={0.025}
-            m={M.steel}
-            name="obj-conduit-run"
+        {/* back plate and screws */}
+        <RoundedBox
+          args={[0.34, 0.56, 0.03]}
+          radius={0.012}
+          smoothness={2}
+          position={[0, 0, -0.005]}
+          material={evBack}
+        />
+        {[
+          [-0.155, 0.22],
+          [-0.155, -0.22],
+          [0.155, 0.22],
+          [0.155, -0.22],
+        ].map(([x, y], i) => (
+          <C
+            key={i}
+            p={[x!, y!, 0.012]}
+            r={[Math.PI / 2, 0, 0]}
+            radius={0.007}
+            h={0.006}
+            m={M.darkMetal}
           />
+        ))}
+        {/* white shell */}
+        <RoundedBox
+          args={[0.3, 0.52, 0.075]}
+          radius={0.034}
+          smoothness={4}
+          position={[-0.012, 0.004, 0.045]}
+          material={evShell}
+          castShadow
+        />
+        {/* status ring */}
+        <mesh position={[0.004, 0.155, 0.0835]} material={fixed ? ready : amber}>
+          <ringGeometry args={[0.047, 0.058, 40]} />
+        </mesh>
+        {/* conduit fitting at the bottom */}
+        <C p={[0, -0.275, 0.035]} radius={0.024} h={0.04} m={evConduit} />
+        <C p={[0, -0.3, 0.035]} radius={0.02} h={0.02} m={evConduit} />
+        {/* holster with the connector handle hanging in it */}
+        <group name="obj-charger-holster" position={[0.2, 0.06, 0.03]}>
+          <B p={[0, 0.0, 0]} s={[0.075, 0.13, 0.05]} m={evBack} />
+          <B p={[0, 0.05, 0.035]} s={[0.07, 0.03, 0.03]} m={evBack} />
+          <group position={[0.012, 0.03, 0.06]} rotation={[0.12, 0, -0.18]}>
+            <mesh material={evRubber} position={[0, -0.07, 0]} castShadow>
+              <capsuleGeometry args={[0.024, 0.13, 6, 12]} />
+            </mesh>
+            {/* ridged strain relief where the cable leaves the handle */}
+            {[0, 1, 2, 3].map((i) => (
+              <mesh
+                key={i}
+                material={evRubber}
+                position={[0, -0.17 - i * 0.018, 0]}
+                rotation={[Math.PI / 2, 0, 0]}
+              >
+                <torusGeometry args={[0.017 - i * 0.001, 0.005, 6, 14]} />
+              </mesh>
+            ))}
+          </group>
+        </group>
+        {/* cable coiled round a round hanger */}
+        <mesh material={evRubber} position={[0.215, -0.235, 0.05]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.07, 0.07, 0.03, 28]} />
+        </mesh>
+        {[0, 1, 2].map((i) => (
+          <mesh
+            key={i}
+            material={evRubber}
+            position={[0.215 + i * 0.006, -0.25 - i * 0.012, 0.03 + i * 0.008]}
+            scale={[0.82, 1, 1]}
+            castShadow
+          >
+            <torusGeometry args={[0.12, 0.013, 8, 36]} />
+          </mesh>
+        ))}
+        <Pipe a={[0.2, -0.12, 0.09]} b={[0.19, -0.14, 0.07]} radius={0.013} m={evRubber} />
+        {fixed ? (
+          <group name="obj-conduit-run">
+            <Pipe a={[0, -0.31, 0.035]} b={[0, -1.3, 0.035]} radius={0.017} m={evConduit} />
+            {/* strap clamp holding the conduit to the siding */}
+            <B p={[0, -0.62, 0.035]} s={[0.05, 0.022, 0.045]} m={evConduit} />
+            <B p={[0, -0.62, 0.012]} s={[0.1, 0.022, 0.008]} m={evConduit} />
+            {[-0.04, 0.04].map((x) => (
+              <C
+                key={x}
+                p={[x, -0.62, 0.018]}
+                r={[Math.PI / 2, 0, 0]}
+                radius={0.006}
+                h={0.006}
+                m={M.darkMetal}
+              />
+            ))}
+          </group>
         ) : (
-          <Blink period={1.6}>
-            <Label p={[0, -0.36, 0.08]} size={0.05} color="#ff9340">
-              No circuit
-            </Label>
-          </Blink>
+          <>
+            {/* knockout capped: nothing wired in yet */}
+            <C p={[0, -0.315, 0.035]} radius={0.021} h={0.008} m={evBack} />
+            <Blink period={1.6}>
+              <Label p={[0, -0.42, 0.08]} size={0.05} color="#ff9340">
+                No circuit
+              </Label>
+            </Blink>
+          </>
         )}
       </group>
     </Hotspot>
@@ -516,7 +621,13 @@ function Condenser() {
         <B p={[-0.2, 0.815, 0.474]} s={[0.26, 0.015, 0.004]} m={M.orange} cast={false} />
         {/* service corner */}
         {fixed ? (
-          <B name="obj-ac-service-panel" p={[0.3, 0.55, 0.465]} s={[0.26, 0.5, 0.02]} m={acBody} />
+          // Stands proud of the louvres and clear of the corner post so no face is shared.
+          <B
+            name="obj-ac-service-panel"
+            p={[0.28, 0.55, 0.482]}
+            s={[0.23, 0.5, 0.018]}
+            m={acBody}
+          />
         ) : (
           <group name="obj-ac-open-service-bay">
             <B p={[0.3, 0.55, 0.43]} s={[0.24, 0.46, 0.04]} m={acShadow} cast={false} />

@@ -360,7 +360,8 @@ export const spots: SpotConfig[] = [
     problem: "A new Level 2 charger is on the garage wall but it has no dedicated circuit yet.",
     fix: "A licensed electrician runs a dedicated 240V circuit, pulls the permit and commissions the charger.",
     related: ["EV charger installation", "Panel upgrades", "Outdoor outlets"],
-    marker: [11.7, 2.2, 0.6],
+    // Out from the garage wall far enough that its halo never cuts into the siding.
+    marker: [12.4, 2.15, 0.6],
     view: v([15, 2.6, 5.4], [11.6, 1.3, 0.6]),
   },
   // X-Ray systems
