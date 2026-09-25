@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { B, C } from "./kit";
+import { B, C, M } from "./kit";
 import { StaticBatch } from "./StaticBatch";
 import { RealisticTrees, type TreeSpec } from "./Foliage";
 
@@ -581,19 +581,109 @@ export const NEIGHBOR_HOMES: HouseSpec[] = [
 ];
 
 /**
+ * The rest of the subdivision, so the neighborhood carries on in every
+ * direction instead of stopping at a lawn: a back street behind the rear
+ * row with a row of homes across it, a parallel street beyond the homes
+ * across the road with homes on both sides, cross streets at either end,
+ * and the main street's rows continuing past them. Phones get the nearer
+ * rings only.
+ */
+const FAR = {
+  /** Street behind the back row, and the one past the homes across the road. */
+  backStreetZ: -32.5,
+  frontStreetZ: 47.5,
+  /** Cross streets at both ends of the block. */
+  crossX: 80,
+};
+const farMobile = typeof window !== "undefined" && window.innerWidth < 768;
+let farSeed = 30;
+const row = (xs: number[], z: number, face: 0 | 1) => xs.map((x) => spec(x, z, face, farSeed++));
+export const FAR_HOMES: HouseSpec[] = [
+  // Back row carried on to the cross streets.
+  ...row([-58, 62], -21, 1),
+  // Across the back street, facing it.
+  ...row([-58, -38, -18, 2, 22, 42, 62], -43.6, 0),
+  // Backing onto the homes across the road, facing the next street north.
+  ...row([-57, -38, -19, 0, 19, 38, 57], 37, 0),
+  // Main street rows past the cross streets.
+  ...row([-94, 94], -2.4, 0),
+  ...row([-94, 94], 21, 1),
+  ...(farMobile
+    ? []
+    : [
+        ...row([-57, -38, -19, 0, 19, 38, 57], 58, 1),
+        ...row([-111, 111], -2.4, 0),
+        ...row([-111, 111], 21, 1),
+        ...row([-94, 94], -43.6, 0),
+        ...row([-94, 94], 37, 0),
+      ]),
+];
+
+/** Streets and sidewalks for the rest of the subdivision. */
+function FarStreets() {
+  const { backStreetZ: bz, frontStreetZ: fz, crossX: cx } = FAR;
+  const len = 260;
+  const ew = (z: number, key: string) => (
+    <group key={key} name={`street-${key}`}>
+      <B p={[0, -0.005, z]} s={[len, 0.02, 6.4]} m={M.asphalt} cast={false} />
+      <B p={[0, 0.06, z - 3.6]} s={[len, 0.12, 1.8]} m={M.sidewalk} cast={false} />
+      <B p={[0, 0.06, z + 3.6]} s={[len, 0.12, 1.8]} m={M.sidewalk} cast={false} />
+      {Array.from({ length: 48 }, (_, i) => (
+        <B key={i} p={[-118 + i * 5, 0.01, z]} s={[2.2, 0.01, 0.14]} m={M.trim} cast={false} />
+      ))}
+    </group>
+  );
+  const ns = (x: number) => (
+    <group key={`ns${x}`} name={`cross-street-${x}`}>
+      {/* laid in pieces between the east-west streets so no two road surfaces overlap */}
+      {(
+        [
+          // road runs up to each street's asphalt, walks stop at its sidewalks
+          [bz + 3.2, 5.8, bz + 4.5, 4.2],
+          [12.2, fz - 3.2, 13.8, fz - 4.5],
+          [fz + 3.2, 80, fz + 4.5, 80],
+          [-80, bz - 3.2, -80, bz - 4.5],
+        ] as [number, number, number, number][]
+      ).map(([z1, z2, w1, w2]) => (
+        <group key={z1}>
+          <B p={[x, -0.004, (z1 + z2) / 2]} s={[6.4, 0.02, z2 - z1]} m={M.asphalt} cast={false} />
+          {[-1, 1].map((sd) => (
+            <B
+              key={sd}
+              p={[x + sd * 4.1, 0.06, (w1 + w2) / 2]}
+              s={[1.8, 0.12, w2 - w1]}
+              m={M.sidewalk}
+              cast={false}
+            />
+          ))}
+        </group>
+      ))}
+    </group>
+  );
+  return (
+    <StaticBatch name="far-streets">
+      {ew(bz, "back")}
+      {ew(fz, "north")}
+      {ns(-cx)}
+      {ns(cx)}
+    </StaticBatch>
+  );
+}
+
+/**
  * One yard tree per home, placed on the side away from the driveway. The
  * home straight across the street skips its tree so the service van parked
  * out front stays in clear view.
  */
-const yardTrees: TreeSpec[] = NEIGHBOR_HOMES.filter((h) => !(h.x === 0 && h.z === 21)).map(
-  ({ x, z, face, seed, style }) => {
+const yardTrees: TreeSpec[] = [...NEIGHBOR_HOMES, ...FAR_HOMES]
+  .filter((h) => !(h.x === 0 && h.z === 21))
+  .map(({ x, z, face, seed, style }) => {
     const half = { ranch: 4.1, colonial: 4.7, cape: 4.5, craftsman: 4.6 }[style];
     const lx = -(half + 2);
     const lz = 5.6 + (seed % 2) * 0.5;
     const f = face ? -1 : 1;
     return [x + lx * f, z + lz * f, 1 + (seed % 3) * 0.15];
-  },
-);
+  });
 
 export function Neighborhood() {
   return (
@@ -606,6 +696,14 @@ export function Neighborhood() {
           ))}
         </group>
       </StaticBatch>
+      <StaticBatch name="far-neighborhood">
+        <group name="far-houses">
+          {FAR_HOMES.map((h) => (
+            <House key={`${h.x}-${h.z}`} {...h} />
+          ))}
+        </group>
+      </StaticBatch>
+      <FarStreets />
     </>
   );
 }

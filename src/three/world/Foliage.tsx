@@ -110,6 +110,152 @@ function grassTexture() {
   return t;
 }
 
+/** Tight small-leaved foliage, like boxwood or holly, for the shrub cards. */
+function shrubLeafTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 256;
+  const g = c.getContext("2d")!;
+  const r = rng(29);
+  const greens = ["#1f3d1b", "#2a4f22", "#355f29", "#406f30", "#4f8038", "#62923f", "#79a84c"];
+  for (let i = 0; i < 1400; i++) {
+    const a = r() * Math.PI * 2;
+    const d = Math.pow(r(), 0.55) * 118;
+    const x = 128 + Math.cos(a) * d;
+    const y = 128 + Math.sin(a) * d;
+    const lit = 1 - y / 256;
+    g.save();
+    g.translate(x, y);
+    g.rotate(r() * Math.PI * 2);
+    g.fillStyle = greens[Math.min(greens.length - 1, Math.floor(r() * 3 + lit * 4))]!;
+    g.beginPath();
+    g.ellipse(0, 0, 2 + r() * 2.2, 4 + r() * 3.5, 0, 0, Math.PI * 2);
+    g.fill();
+    if (r() < 0.35) {
+      g.fillStyle = "rgba(210,235,170,0.35)";
+      g.beginPath();
+      g.ellipse(-0.6, -1.5, 0.8, 1.6, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.restore();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+
+/** Shrub: centre x, z and size (width, height, depth) in metres. */
+export type ShrubSpec = [x: number, z: number, w: number, h: number, d: number];
+
+/**
+ * Real-looking foundation shrubs. Each is a lumpy, dark leafy core (so it
+ * never reads as see-through) wrapped in dozens of small alpha-cut leaf
+ * clusters facing outward, lit on top and shaded underneath, with a ragged
+ * silhouette instead of a smooth ball. All shrubs share two draw calls.
+ */
+export function RealisticShrubs({ shrubs, seed = 3 }: { shrubs: ShrubSpec[]; seed?: number }) {
+  const coreRef = useRef<THREE.InstancedMesh>(null);
+  const leafRef = useRef<THREE.InstancedMesh>(null);
+  const cards = isMobile() ? 70 : 130;
+
+  const mats = useMemo(() => {
+    const leaves = shrubLeafTexture();
+    const coreMap = leaves.clone();
+    coreMap.wrapS = coreMap.wrapT = THREE.RepeatWrapping;
+    coreMap.repeat.set(3, 2);
+    coreMap.needsUpdate = true;
+    return {
+      core: new THREE.MeshStandardMaterial({ map: coreMap, color: "#688a52", roughness: 0.95 }),
+      leaf: new THREE.MeshStandardMaterial({
+        map: leaves,
+        alphaTest: 0.4,
+        side: THREE.DoubleSide,
+        roughness: 0.78,
+      }),
+    };
+  }, []);
+  const geos = useMemo(() => {
+    // Lumpy core: an icosphere pushed in and out so the mass is irregular.
+    const core = new THREE.IcosahedronGeometry(1, 3);
+    const p = core.attributes["position"] as THREE.BufferAttribute;
+    const v = new THREE.Vector3();
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i);
+      const n =
+        1 +
+        0.09 * Math.sin(v.x * 5.3 + v.y * 2.1) +
+        0.07 * Math.sin(v.z * 6.7 - v.x * 3.3) +
+        0.05 * Math.sin(v.y * 9.1 + v.z * 4.4);
+      v.multiplyScalar(n);
+      if (v.y < -0.55) v.y = -0.55 + (v.y + 0.55) * 0.3;
+      p.setXYZ(i, v.x, v.y, v.z);
+    }
+    core.computeVertexNormals();
+    return { core, card: new THREE.PlaneGeometry(1, 1) };
+  }, []);
+
+  useLayoutEffect(() => {
+    const r = rng(seed * 131 + 7);
+    const o = new THREE.Object3D();
+    const col = new THREE.Color();
+    const n = new THREE.Vector3();
+    const look = new THREE.Vector3();
+    shrubs.forEach(([x, z, w, h, d], si) => {
+      const cy = h * 0.5;
+      o.position.set(x, cy, z);
+      o.rotation.set(0, r() * Math.PI * 2, 0);
+      o.scale.set(w * 0.44, h * 0.46, d * 0.44);
+      o.updateMatrix();
+      coreRef.current!.setMatrixAt(si, o.matrix);
+      for (let k = 0; k < cards; k++) {
+        // Points over the upper three quarters of an ellipsoid shell,
+        // facing outward with a random twist so the edge stays ragged.
+        const u = r() * Math.PI * 2;
+        const cv = 1 - r() * 1.55;
+        const sv = Math.sqrt(Math.max(0, 1 - cv * cv));
+        n.set(sv * Math.cos(u), cv, sv * Math.sin(u));
+        const shell = 0.4 + r() * 0.12;
+        o.position.set(x + n.x * w * shell, cy + n.y * h * (shell + 0.02), z + n.z * d * shell);
+        look.copy(o.position).add(n);
+        o.rotation.set(0, 0, 0);
+        o.lookAt(look);
+        o.rotateX((r() - 0.5) * 0.9);
+        o.rotateY((r() - 0.5) * 0.9);
+        o.rotateZ(r() * Math.PI * 2);
+        const sc = Math.min(w, h) * (0.26 + r() * 0.2);
+        o.scale.set(sc, sc, sc);
+        o.updateMatrix();
+        const i = si * cards + k;
+        leafRef.current!.setMatrixAt(i, o.matrix);
+        const light = 0.62 + (n.y + 0.55) * 0.3 + r() * 0.12;
+        col.setRGB(light * (0.9 + r() * 0.1), light, light * (0.82 + r() * 0.1));
+        leafRef.current!.setColorAt(i, col);
+      }
+    });
+    coreRef.current!.instanceMatrix.needsUpdate = true;
+    leafRef.current!.instanceMatrix.needsUpdate = true;
+    if (leafRef.current!.instanceColor) leafRef.current!.instanceColor.needsUpdate = true;
+  }, [shrubs, cards, seed]);
+
+  return (
+    <group name="realistic-shrubs">
+      <instancedMesh
+        ref={coreRef}
+        args={[geos.core, mats.core, shrubs.length]}
+        castShadow
+        receiveShadow
+        frustumCulled={false}
+      />
+      <instancedMesh
+        ref={leafRef}
+        args={[geos.card, mats.leaf, shrubs.length * cards]}
+        receiveShadow
+        frustumCulled={false}
+      />
+    </group>
+  );
+}
+
 export type TreeSpec = [x: number, z: number, scale: number];
 
 export function RealisticTrees({ trees, seed = 1 }: { trees: TreeSpec[]; seed?: number }) {

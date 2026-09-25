@@ -2,7 +2,13 @@ import { StaticBatch } from "./StaticBatch";
 import { Neighborhood, neighborGrassAvoid } from "./Neighborhood";
 import { Neighbors } from "./Npcs";
 import { ServiceVanDetailed } from "./ServiceVan";
-import { GrassField, RealisticTrees, type TreeSpec } from "./Foliage";
+import {
+  GrassField,
+  RealisticShrubs,
+  RealisticTrees,
+  type ShrubSpec,
+  type TreeSpec,
+} from "./Foliage";
 
 const STREET_TREES: TreeSpec[] = [
   [-14, 4.6, 1],
@@ -17,6 +23,15 @@ const STREET_TREES: TreeSpec[] = [
   [7, -9.8, 1.1],
   [-15, -8, 1.2],
 ];
+/** Foundation shrubs along the front of the house, either side of the porch. */
+const FRONT_SHRUBS: ShrubSpec[] = [-2.2, -3.6, -5.0, -6.4, -7.8, 3.2, 4.4, 5.4].map((x, i) => [
+  x,
+  2.55,
+  0.98 + (i % 3) * 0.12,
+  0.74 + ((i * 7) % 4) * 0.05,
+  0.8,
+]);
+
 /** Keep grass off the house, drives, paths, street and every neighbor's footprint. */
 const GRASS_AVOID: [number, number, number, number][] = [
   [-9.5, -6.4, 12.7, 2.35],
@@ -309,30 +324,31 @@ export function WorldEnvironment({ shadows }: { shadows: boolean }) {
         material={M.grassDark}
         receiveShadow
       >
-        <planeGeometry args={[200, 200]} />
+        <planeGeometry args={[360, 360]} />
       </mesh>
       <StaticBatch name="street-static">
-        <B name="street" p={[0, -0.005, 9]} s={[200, 0.02, 6.4]} m={M.asphalt} cast={false} />
-        {Array.from({ length: 30 }, (_, i) => (
-          <B key={i} p={[-72 + i * 5, 0.01, 9]} s={[2.2, 0.01, 0.14]} m={M.trim} cast={false} />
+        <B name="street" p={[0, -0.005, 9]} s={[260, 0.02, 6.4]} m={M.asphalt} cast={false} />
+        {Array.from({ length: 48 }, (_, i) => (
+          <B key={i} p={[-118 + i * 5, 0.01, 9]} s={[2.2, 0.01, 0.14]} m={M.trim} cast={false} />
         ))}
         <B
           name="sidewalk-north"
           p={[0, 0.06, 5.1]}
-          s={[200, 0.12, 1.8]}
+          s={[260, 0.12, 1.8]}
           m={M.sidewalk}
           cast={false}
         />
         <B
           name="sidewalk-south"
           p={[0, 0.06, 12.9]}
-          s={[200, 0.12, 1.8]}
+          s={[260, 0.12, 1.8]}
           m={M.sidewalk}
           cast={false}
         />
       </StaticBatch>
       <Backdrop day={day} />
       <RealisticTrees trees={STREET_TREES} />
+      <RealisticShrubs shrubs={FRONT_SHRUBS} />
       <GrassField area={[-38, -16, 42, 27]} avoid={GRASS_AVOID} />
       <Neighborhood />
       <Neighbors />

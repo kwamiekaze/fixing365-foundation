@@ -112,12 +112,16 @@ export function TellUsLink({
 }
 
 /** Plays the whole house being fixed, then the drone orbit. */
-function PlayFixes() {
+function PlayFixes({ from }: { from?: string }) {
   return (
     <button
       type="button"
-      onClick={() => void startShowcase()}
-      aria-label="Play: watch every fix, start to finish"
+      onClick={() => void startShowcase(from)}
+      aria-label={
+        from
+          ? "Play: fix this and every problem after it"
+          : "Play: watch every fix, start to finish"
+      }
       title="Watch every fix"
       className="play-fixes group relative grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_24px_-6px] shadow-primary/70 transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
     >
@@ -136,7 +140,7 @@ function WelcomeCard({ full }: { full: boolean }) {
     return (
       <section
         aria-live="polite"
-        className="spot-card-in absolute inset-x-3 bottom-24 z-30 rounded-lg border border-border bg-panel p-4 shadow-2xl backdrop-blur-xl md:inset-x-auto md:bottom-6 md:left-10 md:w-[26rem] md:p-5"
+        className="spot-card-in absolute inset-x-3 bottom-24 z-30 glass-card rounded-lg p-4 md:inset-x-auto md:bottom-6 md:left-10 md:w-[26rem] md:p-5"
       >
         <div className="absolute right-2 top-2 flex items-center gap-1.5">
           <StepArrows id="welcome" />
@@ -192,7 +196,7 @@ function WelcomeCard({ full }: { full: boolean }) {
   return (
     <aside
       aria-live="polite"
-      className="spot-card-in absolute inset-x-2 bottom-24 z-30 max-h-[62%] overflow-y-auto rounded-lg border border-border bg-panel p-5 shadow-2xl backdrop-blur-xl md:inset-y-5 md:bottom-auto md:left-auto md:right-5 md:max-h-none md:w-[27rem] md:p-7"
+      className="spot-card-in absolute inset-x-2 bottom-24 z-30 max-h-[62%] overflow-y-auto glass-card rounded-lg p-5 md:inset-y-5 md:bottom-auto md:left-auto md:right-5 md:max-h-none md:w-[27rem] md:p-7"
     >
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-bold text-primary">Welcome to Fixing365</p>
@@ -273,7 +277,7 @@ export function ServicePanel() {
     return (
       <section
         aria-live="polite"
-        className="spot-card-in absolute inset-x-3 bottom-24 z-30 rounded-lg border border-border bg-panel p-4 shadow-2xl backdrop-blur-xl md:inset-x-auto md:bottom-6 md:left-10 md:w-[27rem] md:p-5"
+        className="spot-card-in absolute inset-x-3 bottom-24 z-30 glass-card rounded-lg p-4 md:inset-x-auto md:bottom-6 md:left-10 md:w-[27rem] md:p-5"
       >
         <div className="absolute right-2 top-2 flex items-center gap-1.5">
           <StepArrows id={spot.id} />
@@ -290,19 +294,22 @@ export function ServicePanel() {
         <h2 className="mt-1 pr-28 font-display text-lg font-bold leading-snug md:text-xl">
           {spot.title}
         </h2>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button asChild variant="hero" size="sm">
-            {request}
-          </Button>
-          <Button
-            variant="inverse"
-            size="sm"
-            onClick={() => world.setCard("full")}
-            aria-haspopup="dialog"
-          >
-            More info <ArrowUpRight />
-          </Button>
-          {spot.service && <FixToggle id={spot.id} compact />}
+        <div className="mt-3 flex items-end gap-3">
+          <div className="flex flex-1 flex-wrap items-center gap-2">
+            <Button asChild variant="hero" size="sm">
+              {request}
+            </Button>
+            <Button
+              variant="inverse"
+              size="sm"
+              onClick={() => world.setCard("full")}
+              aria-haspopup="dialog"
+            >
+              More info <ArrowUpRight />
+            </Button>
+            {spot.service && <FixToggle id={spot.id} compact />}
+          </div>
+          {spot.service && !spot.xray && <PlayFixes from={spot.id} />}
         </div>
       </section>
     );
@@ -310,7 +317,7 @@ export function ServicePanel() {
   return (
     <aside
       aria-live="polite"
-      className="spot-card-in absolute inset-x-2 bottom-24 z-30 max-h-[58%] overflow-y-auto rounded-lg border border-border bg-panel p-5 shadow-2xl backdrop-blur-xl md:inset-y-5 md:bottom-auto md:left-auto md:right-5 md:max-h-none md:w-[25rem] md:p-7"
+      className="spot-card-in absolute inset-x-2 bottom-24 z-30 max-h-[58%] overflow-y-auto glass-card rounded-lg p-5 md:inset-y-5 md:bottom-auto md:left-auto md:right-5 md:max-h-none md:w-[25rem] md:p-7"
     >
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-bold text-primary">{service?.name ?? "Fixing365 HQ"}</p>

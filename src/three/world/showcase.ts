@@ -48,12 +48,28 @@ export function stopShowcase() {
   });
 }
 
-export async function startShowcase() {
+/**
+ * Play from `fromId` (a problem, or Welcome / nothing for the whole house).
+ * Starting at Welcome or the first problem resets the house and plays all
+ * of them, ending on the full count. Starting partway fixes that problem
+ * and every one after it, leaving earlier ones as they are, and the finale
+ * skips the count unless every problem ended up fixed during the run.
+ */
+export async function startShowcase(fromId?: string | null) {
   const id = ++run;
-  const list = showcaseSpots();
+  const all = showcaseSpots();
+  const start = Math.max(
+    0,
+    all.findIndex((s) => s.id === fromId),
+  );
+  const list = all.slice(start);
+  const whole = start === 0;
   const reduced = world.get().reduced;
+  const fixed = { ...world.get().fixed };
+  // Every problem in the run starts broken so its fix plays out on screen.
+  for (const s of list) fixed[s.id] = false;
   world.set({
-    fixed: {},
+    fixed: whole ? {} : fixed,
     xray: false,
     touring: false,
     tourCaption: null,
@@ -83,14 +99,14 @@ export async function startShowcase() {
       await sleep(reduced ? 700 : 1750, id);
     }
 
-    // Every fix in: the drone lifts off for the reveal.
+    // The count only shows when this run fixed every problem in the house.
+    const everyOne = list.length === all.length;
     world.set({
       showcase: "orbit",
       spot: null,
-      showcaseCaption: {
-        kicker: "Before and after",
-        title: `${list.length} problems. Every one fixed.`,
-      },
+      showcaseCaption: everyOne
+        ? { kicker: "Before and after", title: `${all.length} problems. Every one fixed.` }
+        : { kicker: "Before and after", title: "Fixed, start to finish." },
     });
     if (!reduced) {
       await sleep((ORBIT_S * 1000) / 2, id);

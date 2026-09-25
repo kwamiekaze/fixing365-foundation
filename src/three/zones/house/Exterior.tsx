@@ -281,15 +281,6 @@ function PorchStatic() {
         </group>
       ))}
       <B name="porch-light" p={[0.35, 1.9, 2.1]} s={[0.1, 0.2, 0.1]} m={lamp} cast={false} />
-      {[-2.2, -3.6, -5.0, -6.4, -7.8, 3.2, 4.4, 5.4].map((x, i) => (
-        <S
-          key={x}
-          p={[x, 0.35, 2.55]}
-          radius={0.4}
-          s={[0.42 + (i % 2) * 0.1, 0.36, 0.36]}
-          m={i % 3 ? M.plant : M.grass}
-        />
-      ))}
       <group name="obj-mailbox" position={[-1.6, 0, 3.9]}>
         <C p={[0, 0.5, 0]} radius={0.04} h={1} m={M.woodRaw} seg={6} />
         <B p={[0, 1.08, 0]} s={[0.22, 0.24, 0.46]} m={M.navy} />
