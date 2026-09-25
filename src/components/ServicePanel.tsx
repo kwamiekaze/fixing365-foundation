@@ -133,7 +133,8 @@ function WelcomeCard({ full }: { full: boolean }) {
           {SLOGAN}
         </h1>
         <p className="mt-2 text-sm leading-6 text-foreground/80">
-          Tap anything broken in the house, or snap a photo and tell us what’s wrong.
+          Scroll or swipe up to fix the whole house, one problem at a time. Or tap anything broken
+          to jump straight to it.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Button asChild variant="hero" size="sm">

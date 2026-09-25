@@ -45,21 +45,32 @@ export function LogoMark({ size = 40 }: { size?: number }) {
 }
 
 /**
- * Fixing365 lockup: badge, wordmark and slogan stacked beneath, in the same
- * spirit as the KleanupCrew logo and tagline.
+ * Fixing365 lockup from the brand artwork: the house, calendar and wrench
+ * badge, the wordmark with a green 365, and the slogan in italics beneath.
  */
 export function Brand({ compact = false }: { compact?: boolean }) {
+  const icon = compact ? 40 : 46;
   return (
     <span className="inline-flex items-center gap-2.5 text-foreground">
-      <LogoMark size={compact ? 38 : 44} />
+      <img
+        src="/brand/fixing365-icon.webp"
+        alt=""
+        width={icon}
+        height={icon}
+        className="shrink-0 rounded-[10px] drop-shadow-[0_0_10px_rgba(56,189,248,0.35)]"
+        style={{ width: icon, height: icon }}
+      />
       <span className="flex flex-col leading-none">
         <span
-          className={`font-display font-extrabold tracking-tight ${compact ? "text-[1.3rem]" : "text-2xl"}`}
+          className={`font-display font-extrabold tracking-tight ${compact ? "text-[1.35rem]" : "text-2xl"}`}
         >
-          Fixing<span className="text-primary">365</span>
+          Fixing
+          <span className="bg-gradient-to-b from-[#8ef04a] to-[#12c24c] bg-clip-text text-transparent">
+            365
+          </span>
         </span>
         <span
-          className={`mt-1 font-display font-bold italic text-foreground/80 ${compact ? "text-[0.72rem]" : "text-sm"}`}
+          className={`mt-1 font-display font-bold italic text-[#b9c6d8] ${compact ? "text-[0.74rem]" : "text-sm"}`}
         >
           {SLOGAN.replace(/\.$/, "")}
         </span>

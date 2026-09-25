@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { ArrowRight, Camera, Menu } from "lucide-react";
 import { Brand } from "./Brand";
 import { Button } from "./ui/button";
@@ -19,9 +18,17 @@ export function Header() {
     <>
       <header className="sticky top-0 z-50 border-b border-border/70 bg-panel backdrop-blur-xl">
         <div className="page-shell flex h-16 items-center justify-between">
-          <Link to="/" aria-label="Fixing365 home">
+          {/* The logo always reloads the homepage fresh, back to the welcome view. */}
+          <a
+            href="/"
+            aria-label="Fixing365 home"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.assign("/");
+            }}
+          >
             <Brand compact />
-          </Link>
+          </a>
           <nav className="hidden items-center gap-6 lg:flex" aria-label="Main navigation">
             {links.map(([id, label]) => (
               <button

@@ -19,6 +19,8 @@ export interface WorldState {
   tourCaption: string | null;
   /** Bumped on every navigation so choosing the same view again still re-frames it. */
   viewNonce: number;
+  /** performance.now() when the scroll story last fixed something, for the camera push-in. */
+  fixedAt: number;
 }
 
 let state: WorldState = {
@@ -32,6 +34,7 @@ let state: WorldState = {
   touring: false,
   tourCaption: null,
   viewNonce: 0,
+  fixedAt: 0,
 };
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());

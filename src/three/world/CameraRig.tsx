@@ -56,7 +56,8 @@ interface Leg {
 
 /** Crane move: eased dolly, target leads slightly, and the camera rises over walls mid-flight. */
 function flightDuration(a: THREE.Vector3, b: THREE.Vector3) {
-  return Math.min(8.5, Math.max(1.6, 1.3 + Math.sqrt(a.distanceTo(b)) * 0.75));
+  // Unhurried, like a crane operator: short hops still take two seconds, long ones up to nine.
+  return Math.min(9, Math.max(2.1, 1.7 + Math.sqrt(a.distanceTo(b)) * 0.8));
 }
 function sampleLeg(leg: Leg, now: number, outP: THREE.Vector3, outT: THREE.Vector3) {
   const k = Math.min(1, (now - leg.start) / leg.dur);
@@ -320,6 +321,12 @@ export function CameraRig() {
       P.x += Math.sin(e * 0.35) * 0.05 * s.holdScale * ramp;
       P.y += Math.sin(e * 0.2555 + 1.4) * 0.04 * s.holdScale * ramp;
       T.copy(s.anchorT);
+      // The moment a fix lands, the camera eases in on it, a slow push the
+      // way a director would land the payoff of a scene.
+      if (w.fixedAt / 1000 > s.holdStart) {
+        const since = t - w.fixedAt / 1000;
+        P.lerp(s.anchorT, 0.14 * smootherstep(since / 1.8));
+      }
     }
     s.baseP.copy(P);
     s.baseT.copy(T);

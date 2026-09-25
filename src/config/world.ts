@@ -332,7 +332,7 @@ export const spots: SpotConfig[] = [
     fix: "A fence pro sets a new post in concrete, rehangs the panel and adjusts the gate hinges and latch.",
     related: ["Fence repair", "Gate repair", "Deck & porch repair"],
     marker: [-11.4, 2.3, 1.4],
-    view: v([-5.2, 3.2, 8.2], [-11.3, 0.9, 1.0]),
+    view: v([-8.6, 3.4, 8.6], [-11.3, 0.9, 1.0]),
   },
   {
     id: "condenser",
