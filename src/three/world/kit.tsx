@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { Vec3 } from "@/config/world";
 import { rigState, world } from "./store";
 import { texturize } from "./surfaces";
@@ -267,3 +267,15 @@ export function daylight(hour = localHour()) {
   const x = Math.sin(((hour - 6) / 12) * Math.PI);
   return THREE.MathUtils.clamp(x * 1.6 + 0.15, 0, 1);
 }
+
+/** Local hour that stays current: rechecks every minute so evening changes happen live. */
+export function useClockHour() {
+  const [h, setH] = useState(localHour);
+  useEffect(() => {
+    const id = window.setInterval(() => setH(localHour()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return h;
+}
+/** After 7 PM and before sunrise: street lights on, neighbors inside. */
+export const isEvening = (hour: number) => hour >= 19 || hour < 6.5;

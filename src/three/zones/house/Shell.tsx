@@ -1,9 +1,56 @@
 import { StaticBatch } from "../../world/StaticBatch";
-import type * as THREE from "three";
+import * as THREE from "three";
 import { B, M } from "../../world/kit";
 import { useDaylight } from "../../world/Environment";
 
 export const H = 3.2;
+
+/** Clear glass for the see-in front wall and ceiling: tinted just enough to read as glass. */
+const GLASS_WALL = new THREE.MeshStandardMaterial({
+  color: "#cfe6f2",
+  roughness: 0.04,
+  metalness: 0.1,
+  transparent: true,
+  opacity: 0.12,
+  depthWrite: false,
+  envMapIntensity: 1.4,
+});
+const GLASS_ROOF = new THREE.MeshStandardMaterial({
+  color: "#dcecf5",
+  roughness: 0.05,
+  metalness: 0.05,
+  transparent: true,
+  opacity: 0.08,
+  depthWrite: false,
+  envMapIntensity: 1.2,
+});
+
+/** Glass pane with a slim frame and mullions, running along X at depth z. */
+function GlassFront({
+  x1,
+  x2,
+  z,
+  y1,
+  y2,
+}: {
+  x1: number;
+  x2: number;
+  z: number;
+  y1: number;
+  y2: number;
+}) {
+  const w = x2 - x1;
+  const n = Math.max(1, Math.round(w / 2.2));
+  return (
+    <group name="front-glass">
+      <B p={[(x1 + x2) / 2, (y1 + y2) / 2, z]} s={[w, y2 - y1, 0.02]} m={GLASS_WALL} cast={false} />
+      <B p={[(x1 + x2) / 2, y2 - 0.03, z]} s={[w, 0.06, 0.07]} m={M.trim} />
+      {Array.from({ length: n + 1 }, (_, i) => (
+        <B key={i} p={[x1 + (w * i) / n, (y1 + y2) / 2, z]} s={[0.05, y2 - y1, 0.06]} m={M.trim} />
+      ))}
+    </group>
+  );
+}
 const T = 0.16;
 
 /** Wall along X at depth z. */
@@ -162,6 +209,17 @@ export function Shell() {
         <B p={[-3.9, 0.08, -4.7]} s={[0.04, 0.12, 2.6]} m={M.trim} cast={false} />
         <B p={[1.9, 0.08, -1.3]} s={[0.04, 0.12, 4.2]} m={M.trim} cast={false} />
       </StaticBatch>
+      {/* Glass stays out of the merged batch so it never casts a shadow into the rooms. */}
+      {/* see-in glass front wall above the knee walls, and a clear glass ceiling */}
+      <GlassFront x1={-9} x2={0.2} z={2} y1={0.75} y2={H} />
+      <GlassFront x1={2} x2={6} z={2} y1={0.75} y2={H} />
+      <B
+        name="glass-ceiling"
+        p={[-1.5, H + 0.01, -2]}
+        s={[15.1, 0.02, 8.1]}
+        m={GLASS_ROOF}
+        cast={false}
+      />
       <group name="house-lights">
         <pointLight
           name="light-kitchen"

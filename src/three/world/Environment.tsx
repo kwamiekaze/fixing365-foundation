@@ -40,10 +40,11 @@ const GRASS_AVOID: [number, number, number, number][] = [
 import { Environment as DreiEnv, Lightformer, Sparkles } from "@react-three/drei";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { B, C, M, daylight, glow, localHour } from "./kit";
+import { B, C, M, daylight, glow, isEvening, localHour, useClockHour } from "./kit";
 
 export function useDaylight() {
-  return useMemo(() => daylight(localHour()), []);
+  const h = useClockHour();
+  return useMemo(() => daylight(h), [h]);
 }
 
 function Sky({ day }: { day: number }) {
@@ -130,8 +131,57 @@ function Backdrop({ day }: { day: number }) {
   );
 }
 
+const beamMat = new THREE.MeshBasicMaterial({
+  color: "#ffd9a0",
+  transparent: true,
+  opacity: 0.07,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  toneMapped: false,
+});
+const poolMat = new THREE.MeshBasicMaterial({
+  color: "#ffcf8a",
+  transparent: true,
+  opacity: 0.28,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  toneMapped: false,
+});
+const haloMat = new THREE.MeshBasicMaterial({
+  color: "#fff0d0",
+  transparent: true,
+  opacity: 0.55,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  toneMapped: false,
+});
+
+/** A lit street lamp at night: real light, a soft beam, a warm pool on the pavement and a glow at the bulb. */
+function LampGlow({ x, z, strong }: { x: number; z: number; strong: boolean }) {
+  return (
+    <group name="street-lamp-glow" position={[x, 0, z]}>
+      <pointLight
+        position={[0, 4.1, 0]}
+        intensity={strong ? 30 : 18}
+        distance={16}
+        decay={1.5}
+        color="#ffd9a0"
+      />
+      <mesh material={beamMat} position={[0, 2.1, 0]}>
+        <coneGeometry args={[1.9, 4.2, 24, 1, true]} />
+      </mesh>
+      <mesh material={poolMat} position={[0, 0.14, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[2.3, 32]} />
+      </mesh>
+      <mesh material={haloMat} position={[0, 4.28, 0]}>
+        <sphereGeometry args={[0.28, 12, 10]} />
+      </mesh>
+    </group>
+  );
+}
+
 function StreetLamp({ x, z, on }: { x: number; z: number; on: boolean }) {
-  const bulb = useMemo(() => (on ? glow("#ffd9a0", 3) : M.white), [on]);
+  const bulb = useMemo(() => (on ? glow("#ffe2b0", 5) : M.white), [on]);
   return (
     <group name="street-lamp" position={[x, 0, z]}>
       <C p={[0, 2.2, 0]} radius={0.06} h={4.4} m={M.darkMetal} seg={8} />
@@ -186,6 +236,7 @@ function Car({
 export function WorldEnvironment({ shadows }: { shadows: boolean }) {
   const day = useDaylight();
   const night = day < 0.35;
+  const lampsOn = isEvening(useClockHour());
   const sun = useMemo(() => {
     const h = localHour();
     const a = ((h - 6) / 12) * Math.PI;
@@ -297,11 +348,13 @@ export function WorldEnvironment({ shadows }: { shadows: boolean }) {
       <Neighborhood />
       <Neighbors />
       <ServiceVanDetailed position={[5.2, 0, 10.85]} />
-      {night && <pointLight position={[-10, 4, 6]} intensity={8} distance={14} color="#ffcf8a" />}
-      <StaticBatch name="street-props" version={night ? 1 : 0}>
+      {/* Street lights actually light the street after 7 PM: a warm pool under each lamp near the house. */}
+      {lampsOn &&
+        [-25, -5, 9, 28].map((x) => <LampGlow key={x} x={x} z={6.25} strong={Math.abs(x) < 12} />)}
+      <StaticBatch name="street-props" version={lampsOn ? 1 : 0}>
         {/* Lamps sit midway between the street trees so no pole ever runs through a crown. */}
         {[-25, -5, 9, 28].map((x) => (
-          <StreetLamp key={x} x={x} z={5.6} on={night || day < 0.5} />
+          <StreetLamp key={x} x={x} z={5.6} on={lampsOn} />
         ))}
         <Car x={24} z={10.6} color="#274b7a" />
         <Car x={20} z={7.4} color="#b8b9bb" flip />

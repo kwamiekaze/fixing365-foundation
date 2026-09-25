@@ -237,7 +237,6 @@ function DrywallHole() {
               cast={false}
             />
           ))}
-          <B name="obj-patch-kit" p={[1.35, 0.06, -2.3]} s={[0.26, 0.04, 0.18]} m={M.orange} />
         </group>
       )}
     </Hotspot>
@@ -290,7 +289,11 @@ function FlatPack() {
   return (
     <Hotspot id="flat-pack">
       {fixed ? (
-        <group name="obj-bookcase-assembled" position={[-0.5, 0, 0.0]} rotation={[0, 0.25, 0]}>
+        <group
+          name="obj-bookcase-assembled"
+          position={[1.72, 0, -0.9]}
+          rotation={[0, -Math.PI / 2, 0]}
+        >
           <Bookcase shelves={3} back />
           {[0.07, 0.37, 0.67, 0.97].map((y, row) =>
             Array.from({ length: 5 + (row % 2) }, (_, i) => {
@@ -310,7 +313,7 @@ function FlatPack() {
           <S p={[0.26, BH + 0.24, 0]} radius={0.12} s={[0.13, 0.16, 0.13]} m={M.plant} />
         </group>
       ) : (
-        <group name="obj-flatpack-build" position={[-0.4, 0, 0.1]}>
+        <group name="obj-flatpack-build" position={[1.2, 0, -0.9]} rotation={[0, -Math.PI / 2, 0]}>
           <group position={[-0.1, 0, -0.1]} rotation={[0, 0.35, 0]}>
             <Bookcase shelves={1} back={false} />
             <B

@@ -13,6 +13,92 @@ import { RealisticTrees, type TreeSpec } from "./Foliage";
  * draw calls.
  */
 
+/* ---------- Procedural surface textures (drawn once, no downloads) ---------- */
+function canvasTex(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void, repeat = 1) {
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  draw(c.getContext("2d")!);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(repeat, repeat);
+  t.anisotropy = 8;
+  return t;
+}
+function rnd(seed: number) {
+  return () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+}
+/** Lap siding: overlapping boards with a shadow line under each lap and faint wood grain. White so it tints to any wall colour. */
+const SIDING = canvasTex(512, 512, (g) => {
+  const r = rnd(3);
+  const boards = 14;
+  const bh = 512 / boards;
+  for (let i = 0; i < boards; i++) {
+    const y = i * bh;
+    const grad = g.createLinearGradient(0, y, 0, y + bh);
+    grad.addColorStop(0, "#ffffff");
+    grad.addColorStop(0.82, "#eeeeee");
+    grad.addColorStop(1, "#bdbdbd");
+    g.fillStyle = grad;
+    g.fillRect(0, y, 512, bh);
+    g.fillStyle = "rgba(0,0,0,0.28)";
+    g.fillRect(0, y + bh - 2, 512, 2);
+    for (let k = 0; k < 10; k++) {
+      g.strokeStyle = `rgba(0,0,0,${0.03 + r() * 0.04})`;
+      g.lineWidth = 1;
+      const gy = y + 3 + r() * (bh - 7);
+      g.beginPath();
+      g.moveTo(r() * 512, gy);
+      g.lineTo(r() * 512, gy + (r() - 0.5) * 2);
+      g.stroke();
+    }
+  }
+});
+/** Architectural shingles: staggered tabs with colour variation and a shadow edge. Grey so it tints to the roof colour. */
+const SHINGLES = canvasTex(
+  512,
+  512,
+  (g) => {
+    const r = rnd(9);
+    const rows = 16;
+    const rh = 512 / rows;
+    for (let i = 0; i < rows; i++) {
+      const off = (i % 2) * 18;
+      for (let x = -40 + off; x < 512; x += 30 + r() * 26) {
+        const w = 30 + r() * 26;
+        const v = 200 + Math.floor(r() * 55);
+        g.fillStyle = `rgb(${v},${v},${v})`;
+        g.fillRect(x, i * rh, w - 2, rh);
+        g.fillStyle = "rgba(0,0,0,0.35)";
+        g.fillRect(x + w - 2, i * rh, 2, rh);
+      }
+      g.fillStyle = "rgba(0,0,0,0.45)";
+      g.fillRect(0, i * rh + rh - 3, 512, 3);
+    }
+  },
+  0.55,
+);
+/** Running-bond brick with mortar lines. */
+const BRICKS = canvasTex(256, 256, (g) => {
+  const r = rnd(5);
+  g.fillStyle = "#cfc6bb";
+  g.fillRect(0, 0, 256, 256);
+  const rows = 12;
+  const rh = 256 / rows;
+  for (let i = 0; i < rows; i++) {
+    const off = (i % 2) * 16;
+    for (let x = -32 + off; x < 256; x += 32) {
+      const v = 0.8 + r() * 0.35;
+      g.fillStyle = `rgb(${Math.round(150 * v)},${Math.round(76 * v)},${Math.round(56 * v)})`;
+      g.fillRect(x + 1.5, i * rh + 1.5, 29, rh - 3);
+    }
+  }
+});
+
 const cache = new Map<string, THREE.MeshStandardMaterial>();
 const mat = (color: string, roughness = 0.85, emissive?: string, ei = 0) => {
   const key = `${color}-${roughness}-${emissive ?? ""}-${ei}`;
@@ -48,7 +134,33 @@ const FLOWERS = ["#e94f6b", "#f2c230", "#ffffff", "#b06ad9", "#ff8a3d"];
 const GLASS = mat("#bcd6de", 0.15, "#f7e8b0", 0.14);
 const DOORWAY = mat("#f6efb0", 0.5, "#f3e27a", 0.6);
 const STONE = mat("#a9a79f", 0.95);
-const BRICK = mat("#8e4b36", 0.9);
+const BRICK = new THREE.MeshStandardMaterial({ map: BRICKS, roughness: 0.9 });
+/** Textured wall and roof materials, cached per colour. */
+const texCache = new Map<string, THREE.MeshStandardMaterial>();
+const wallMat = (color: string) => {
+  const key = `wall-${color}`;
+  let m = texCache.get(key);
+  if (!m)
+    texCache.set(
+      key,
+      (m = new THREE.MeshStandardMaterial({ color, map: SIDING, roughness: 0.82 })),
+    );
+  return m;
+};
+const roofMat = (color: string) => {
+  const key = `roof-${color}`;
+  let m = texCache.get(key);
+  if (!m)
+    texCache.set(
+      key,
+      (m = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(color).multiplyScalar(1.25),
+        map: SHINGLES,
+        roughness: 0.95,
+      })),
+    );
+  return m;
+};
 const PAVER = mat("#cfcac0", 0.95);
 const HEDGE = mat("#4f7f44", 0.95);
 const HEDGE_LIGHT = mat("#679a52", 0.95);
@@ -172,18 +284,6 @@ function Window({
   );
 }
 
-function LapSiding({ w, h, z, pal }: { w: number; h: number; z: number; pal: Palette }) {
-  const line = mat(new THREE.Color(pal.wall).multiplyScalar(0.86).getStyle(), 0.9);
-  const n = Math.floor((h - 0.4) / 0.26);
-  return (
-    <>
-      {Array.from({ length: n }, (_, i) => (
-        <B key={i} p={[0, 0.45 + i * 0.26, z]} s={[w - 0.04, 0.025, 0.02]} m={line} cast={false} />
-      ))}
-    </>
-  );
-}
-
 function Door({ x, z, pal, width = 1 }: { x: number; z: number; pal: Palette; width?: number }) {
   const trim = mat(pal.trim, 0.6);
   return (
@@ -290,9 +390,9 @@ export interface HouseSpec {
 
 function House({ x, z, face, seed, style }: HouseSpec) {
   const pal = PALETTES[seed % PALETTES.length]!;
-  const wall = mat(pal.wall, 0.85);
+  const wall = wallMat(pal.wall);
   const trim = mat(pal.trim, 0.6);
-  const roof = mat(pal.roof, 0.9);
+  const roof = roofMat(pal.roof);
   const sizes: Record<Style, { w: number; d: number; h: number; rise: number }> = {
     ranch: { w: 8.2, d: 7.2, h: 2.9, rise: 1.8 },
     colonial: { w: 9.4, d: 7.4, h: 5.7, rise: 2.4 },
@@ -307,7 +407,6 @@ function House({ x, z, face, seed, style }: HouseSpec) {
       {/* body on a stone foundation, lap siding on the front, corner boards */}
       <B p={[0, 0.18, 0]} s={[w + 0.1, 0.36, d + 0.1]} m={STONE} />
       <B p={[0, h / 2 + 0.18, 0]} s={[w, h - 0.36, d]} m={wall} />
-      <LapSiding w={w} h={h} z={f + 0.012} pal={pal} />
       {[-1, 1].map((sd) => (
         <B
           key={sd}

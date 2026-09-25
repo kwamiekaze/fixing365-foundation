@@ -116,7 +116,6 @@ function SinkLeak() {
           <C p={[-6.4, 0.056, -4.1]} radius={0.45} h={0.006} seg={20} m={M.puddle} cast={false} />
         </group>
       )}
-      {!fixed && <B name="obj-bucket" p={[-6.2, 0.2, -4.7]} s={[0.3, 0.38, 0.3]} m={M.orange} />}
     </Hotspot>
   );
 }

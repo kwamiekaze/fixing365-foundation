@@ -182,8 +182,8 @@ export const spots: SpotConfig[] = [
       "The flat-pack bookshelf is half assembled with leftover screws and the instructions on the floor.",
     fix: "A handyman finishes the build, anchors it to the wall and hauls the packaging to your bin.",
     related: ["Furniture assembly", "Furniture anchoring", "Shelving installation"],
-    marker: [-0.4, 1.7, 0.0],
-    view: v([-2.5, 3.1, 3.4], [-0.3, 0.4, -0.1]),
+    marker: [1.3, 1.75, -0.9],
+    view: v([-1.2, 2.6, 3.2], [1.2, 0.5, -0.9]),
   },
   {
     id: "thermostat",
@@ -409,8 +409,48 @@ export const spots: SpotConfig[] = [
 
 export const getZone = (id?: string | null) => zones.find((z) => z.id === id);
 export const getSpot = (id?: string | null) => spots.find((s) => s.id === id);
+/**
+ * Order of the problem buttons and of the card arrows, starting after
+ * Welcome. Anything not listed keeps its place at the end.
+ */
+export const SPOT_ORDER = [
+  "welcome",
+  "fence-gate",
+  "condenser",
+  "fridge",
+  "kitchen-pipe",
+  "front-door",
+  "flat-pack",
+  "drywall-hole",
+  "ceiling-fan",
+  "tv-mount",
+  "thermostat",
+  "shower-leak",
+  "washer-e21",
+  "breaker-panel",
+  "smoke-detector",
+  "garage-door",
+  "ev-charger",
+];
+const orderOf = (id: string) => {
+  const i = SPOT_ORDER.indexOf(id);
+  return i === -1 ? SPOT_ORDER.length : i;
+};
 export const spotsForZone = (zone: ZoneId, xray = false) =>
-  spots.filter((s) => s.zone === zone && Boolean(s.xray) === xray);
+  spots
+    .filter((s) => s.zone === zone && Boolean(s.xray) === xray)
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => orderOf(a.s.id) - orderOf(b.s.id) || a.i - b.i)
+    .map(({ s }) => s);
+
+/** The spot before or after `id` in the button order, wrapping around. */
+export function stepSpot(id: string, dir: 1 | -1) {
+  const spot = getSpot(id);
+  if (!spot) return null;
+  const list = spotsForZone(spot.zone, Boolean(spot.xray));
+  const i = list.findIndex((s) => s.id === id);
+  return list[(i + dir + list.length) % list.length]!.id;
+}
 /** Best spot to open when a user picks a whole service category. */
 export const heroSpotForService = (service: string) =>
   spots.find((s) => s.service === service && !s.xray);

@@ -30,6 +30,14 @@ function ShowerScreen() {
   const y = 0.57 + H / 2;
   return (
     <group name="obj-glass-shower-door" position={[5.0, 0, -5.1]}>
+      {/* glass on the two ends too, so the tub is enclosed on all four sides */}
+      {[-0.885, 0.885].map((ex) => (
+        <group key={ex}>
+          <B p={[ex, y, -0.4]} s={[0.01, H, 0.78]} m={showerGlass} cast={false} />
+          <B p={[ex, 0.57 + H, -0.4]} s={[0.014, 0.012, 0.78]} m={glassEdge} cast={false} />
+          <B p={[ex, y, -0.01]} s={[0.014, H, 0.012]} m={glassEdge} cast={false} />
+        </group>
+      ))}
       <B p={[0.44, y, -0.01]} s={[0.9, H, 0.01]} m={showerGlass} cast={false} />
       <B p={[0.44, 0.57 + H, -0.01]} s={[0.9, 0.012, 0.014]} m={glassEdge} cast={false} />
       <B p={[-0.005, y, -0.01]} s={[0.012, H, 0.014]} m={glassEdge} cast={false} />
@@ -71,7 +79,7 @@ function Bath() {
               cast={false}
             />
           )}
-          <B p={[0, 1.4, -0.38]} s={[1.8, 1.7, 0.02]} m={M.porcelain} cast={false} />
+          <B p={[0, 1.42, -0.37]} s={[1.8, 1.74, 0.01]} m={showerGlass} cast={false} />
         </group>
         <ShowerScreen />
         <group name="obj-shower-fixture" position={[5.9, 0, -5.5]}>

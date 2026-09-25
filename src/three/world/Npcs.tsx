@@ -2,6 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { forwardRef, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { world } from "./store";
+import { isEvening, useClockHour } from "./kit";
 
 /**
  * Neighbors that make the street feel lived in: someone walking the
@@ -438,9 +439,11 @@ function Fetch({ owner, target }: { owner: [number, number]; target: [number, nu
 
 export function Neighbors() {
   const mobile = typeof window !== "undefined" && window.innerWidth < 768;
+  // The owner and dog head inside at 7 PM and come back out in the morning.
+  const outside = !isEvening(useClockHour());
   return (
     <group name="neighbors">
-      <Fetch owner={[-18.2, 2.6]} target={[-13.8, -2.4]} />
+      {outside && <Fetch owner={[-18.2, 2.6]} target={[-13.8, -2.4]} />}
       {!mobile && <Chatters at={[31.8, 3.3]} />}
     </group>
   );

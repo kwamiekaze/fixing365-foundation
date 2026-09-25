@@ -1,5 +1,7 @@
 import { openRequest } from "./overlays/store";
 import {
+  ChevronLeft,
+  ChevronRight,
   Camera,
   ClipboardList,
   SearchCheck,
@@ -13,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { getService } from "@/config/services";
-import { getSpot } from "@/config/world";
+import { getSpot, stepSpot } from "@/config/world";
 import { useWorld, world } from "@/three/world/store";
 import { Button } from "./ui/button";
 import { SLOGAN } from "@/config/brand";
@@ -61,6 +63,40 @@ function FixToggle({ id, compact = false }: { id: string; compact?: boolean }) {
  */
 
 /** Primary action everywhere: the camera icon tells people they can snap a photo of the problem. */
+/** Previous / next problem, in the same order as the buttons along the bottom. */
+function StepArrows({ id, keepFull = false }: { id: string; keepFull?: boolean }) {
+  const go = (dir: 1 | -1) => {
+    const next = stepSpot(id, dir);
+    if (!next) return;
+    world.selectSpot(next);
+    if (keepFull) world.setCard("full");
+  };
+  const cls =
+    "grid size-9 place-items-center rounded-md border border-border bg-background/40 text-foreground/80 hover:border-primary hover:text-foreground";
+  return (
+    <span className="flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => go(-1)}
+        aria-label="Previous problem"
+        title="Previous"
+        className={cls}
+      >
+        <ChevronLeft className="size-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => go(1)}
+        aria-label="Next problem"
+        title="Next"
+        className={cls}
+      >
+        <ChevronRight className="size-4" />
+      </button>
+    </span>
+  );
+}
+
 export function TellUsLink({
   label = "Tell us what’s broken",
   ...rest
@@ -81,16 +117,19 @@ function WelcomeCard({ full }: { full: boolean }) {
         aria-live="polite"
         className="spot-card-in absolute inset-x-3 bottom-24 z-30 rounded-lg border border-border bg-panel p-4 shadow-2xl backdrop-blur-xl md:inset-x-auto md:bottom-6 md:left-10 md:w-[26rem] md:p-5"
       >
-        <button
-          onClick={() => world.setCard("hidden")}
-          aria-label="Hide welcome"
-          title="Hide"
-          className="absolute right-2 top-2 grid size-10 place-items-center rounded-md text-foreground/70 hover:text-foreground"
-        >
-          <X className="size-4" />
-        </button>
-        <p className="pr-10 text-xs font-bold text-primary">Welcome to Fixing365</p>
-        <h1 className="mt-1 pr-10 font-display text-2xl font-bold leading-tight md:text-3xl">
+        <div className="absolute right-2 top-2 flex items-center gap-1.5">
+          <StepArrows id="welcome" />
+          <button
+            onClick={() => world.setCard("hidden")}
+            aria-label="Hide welcome"
+            title="Hide"
+            className="grid size-9 place-items-center rounded-md text-foreground/70 hover:text-foreground"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        <p className="pr-28 text-xs font-bold text-primary">Welcome to Fixing365</p>
+        <h1 className="mt-1 pr-28 font-display text-2xl font-bold leading-tight md:text-3xl">
           {SLOGAN}
         </h1>
         <p className="mt-2 text-sm leading-6 text-foreground/80">
@@ -132,6 +171,9 @@ function WelcomeCard({ full }: { full: boolean }) {
     >
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-bold text-primary">Welcome to Fixing365</p>
+        <span className="ml-auto">
+          <StepArrows id="welcome" keepFull />
+        </span>
         <Button
           size="icon"
           variant="ghost"
@@ -208,16 +250,19 @@ export function ServicePanel() {
         aria-live="polite"
         className="spot-card-in absolute inset-x-3 bottom-24 z-30 rounded-lg border border-border bg-panel p-4 shadow-2xl backdrop-blur-xl md:inset-x-auto md:bottom-6 md:left-10 md:w-[27rem] md:p-5"
       >
-        <button
-          onClick={() => world.setCard("hidden")}
-          aria-label="Hide details"
-          title="Hide"
-          className="absolute right-2 top-2 grid size-10 place-items-center rounded-md text-foreground/70 hover:text-foreground"
-        >
-          <X className="size-4" />
-        </button>
-        <p className="pr-10 text-xs font-bold text-primary">{service?.name ?? "Fixing365 HQ"}</p>
-        <h2 className="mt-1 pr-10 font-display text-lg font-bold leading-snug md:text-xl">
+        <div className="absolute right-2 top-2 flex items-center gap-1.5">
+          <StepArrows id={spot.id} />
+          <button
+            onClick={() => world.setCard("hidden")}
+            aria-label="Hide details"
+            title="Hide"
+            className="grid size-9 place-items-center rounded-md text-foreground/70 hover:text-foreground"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        <p className="pr-28 text-xs font-bold text-primary">{service?.name ?? "Fixing365 HQ"}</p>
+        <h2 className="mt-1 pr-28 font-display text-lg font-bold leading-snug md:text-xl">
           {spot.title}
         </h2>
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -244,6 +289,9 @@ export function ServicePanel() {
     >
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-bold text-primary">{service?.name ?? "Fixing365 HQ"}</p>
+        <span className="ml-auto">
+          <StepArrows id={spot.id} keepFull />
+        </span>
         <Button
           size="icon"
           variant="ghost"
