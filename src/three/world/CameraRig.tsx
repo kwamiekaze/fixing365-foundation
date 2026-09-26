@@ -53,6 +53,9 @@ interface Leg {
   start: number;
   dur: number;
   lift: number;
+  /** Sideways swing (metres at mid-flight) to steer round something in the way. */
+  bulge: number;
+  side: THREE.Vector3;
 }
 
 /** Crane move: eased dolly, target leads slightly, and the camera rises over walls mid-flight. */
@@ -64,7 +67,9 @@ function sampleLeg(leg: Leg, now: number, outP: THREE.Vector3, outT: THREE.Vecto
   const k = Math.min(1, (now - leg.start) / leg.dur);
   const e = smootherstep(k);
   outP.lerpVectors(leg.fromP, leg.toP, e);
-  outP.y += Math.sin(Math.PI * e) * leg.lift;
+  const arc = Math.sin(Math.PI * e);
+  outP.y += arc * leg.lift;
+  if (leg.bulge) outP.addScaledVector(leg.side, arc * leg.bulge);
   outT.lerpVectors(leg.fromT, leg.toT, glide(Math.min(1, k * 1.08)));
   return k;
 }
@@ -76,7 +81,10 @@ function makeLeg(
   start: number,
 ): Leg {
   const d = fromP.distanceTo(toP);
-  return {
+  const side = new THREE.Vector3(toP.z - fromP.z, 0, fromP.x - toP.x);
+  if (side.lengthSq() < 1e-6) side.set(1, 0, 0);
+  side.normalize();
+  const leg: Leg = {
     fromP: fromP.clone(),
     fromT: fromT.clone(),
     toP: toP.clone(),
@@ -84,7 +92,82 @@ function makeLeg(
     start,
     dur: flightDuration(fromP, toP),
     lift: Math.min(5, d * 0.2),
+    bulge: 0,
+    side,
   };
+  steerClear(leg);
+  return leg;
+}
+
+/**
+ * Obstacle avoidance for every camera move. Before a flight starts, its
+ * path is checked against the solid, discrete things in the scene (pendant
+ * lights and their cords, the fan, fridge, furniture, lamp posts, people),
+ * each padded by the camera's own clearance. If the straight crane line
+ * would pass through one, the flight swings round it to the side (or, if
+ * that is blocked too, rises higher), choosing the smallest detour that is
+ * clear. Room-sized merged geometry (floors, walls, the ground), glass and
+ * instanced grass and leaves are left out, so the cutaway flights into the
+ * house work as before.
+ */
+let sceneRoot: THREE.Object3D | null = null;
+const CLEARANCE = 0.22;
+const boxTmp = new THREE.Box3();
+const sizeTmp = new THREE.Vector3();
+
+function obstacles(): THREE.Box3[] {
+  const out: THREE.Box3[] = [];
+  if (!sceneRoot) return out;
+  sceneRoot.traverseVisible((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || (m as unknown as THREE.InstancedMesh).isInstancedMesh) return;
+    if ((o as unknown as THREE.Points).isPoints || (o as unknown as THREE.Sprite).isSprite) return;
+    const mat = (Array.isArray(m.material) ? m.material[0] : m.material) as
+      THREE.Material | undefined;
+    if (!mat || !mat.visible || mat.transparent || mat.opacity < 0.99) return;
+    let p: THREE.Object3D | null = o;
+    for (let i = 0; i < 4 && p; i++, p = p.parent) if (p.name.startsWith("marker-")) return;
+    const g = m.geometry;
+    if (!g.boundingBox) g.computeBoundingBox();
+    boxTmp.copy(g.boundingBox!).applyMatrix4(m.matrixWorld);
+    boxTmp.getSize(sizeTmp);
+    // Walls, floors, ground and merged room batches are not obstacles to steer round.
+    if (Math.max(sizeTmp.x, sizeTmp.y, sizeTmp.z) > 4.5) return;
+    out.push(boxTmp.clone().expandByScalar(CLEARANCE));
+  });
+  return out;
+}
+
+const pathTmp = new THREE.Vector3();
+function pathClear(leg: Leg, boxes: THREE.Box3[]) {
+  const steps = Math.max(24, Math.ceil(leg.fromP.distanceTo(leg.toP) / 0.1));
+  for (let i = 1; i < steps; i++) {
+    const e = i / steps;
+    // The start and end framings are where the camera is meant to be.
+    if (e < 0.07 || e > 0.93) continue;
+    const arc = Math.sin(Math.PI * e);
+    pathTmp.lerpVectors(leg.fromP, leg.toP, e);
+    pathTmp.y += arc * leg.lift;
+    pathTmp.addScaledVector(leg.side, arc * leg.bulge);
+    for (const b of boxes) if (b.containsPoint(pathTmp)) return false;
+  }
+  return true;
+}
+
+function steerClear(leg: Leg) {
+  const boxes = obstacles();
+  if (!boxes.length || pathClear(leg, boxes)) return;
+  const lift0 = leg.lift;
+  const tries: [number, number][] = [];
+  for (const b of [0.5, 0.8, 1.2, 1.7, 2.3]) tries.push([b, 0], [-b, 0]);
+  for (const up of [0.8, 1.6]) for (const b of [0, 0.8, -0.8, 1.6, -1.6]) tries.push([b, up]);
+  for (const [b, up] of tries) {
+    leg.bulge = b;
+    leg.lift = lift0 + up;
+    if (pathClear(leg, boxes)) return;
+  }
+  leg.bulge = 0;
+  leg.lift = lift0;
 }
 
 /** Centre of the house, what the showcase drone circles. */
@@ -129,7 +212,8 @@ const inside = (v: THREE.Vector3, m = 0): boolean =>
  * wheel zooms in close. Closing a card never moves the camera.
  */
 export function CameraRig() {
-  const { camera, size } = useThree();
+  const { camera, size, scene } = useThree();
+  sceneRoot = scene;
   const spotId = useWorld((s) => s.spot);
   const zoneId = useWorld((s) => s.zone);
   const nonce = useWorld((s) => s.viewNonce);
