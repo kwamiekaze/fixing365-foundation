@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { openSceneGate } from "./sceneGate";
-import video from "@/assets/fixing365-splash.mp4.asset.json";
-import poster from "@/assets/fixing365-splash-poster.jpg.asset.json";
+import video from "@/assets/fixing365-splash-v2.mp4.asset.json";
+import poster from "@/assets/fixing365-splash-poster-v2.jpg.asset.json";
 
 /** Full-screen intro video shown on every homepage load; plays once, over the already-loading site. */
 export function SplashScreen() {
